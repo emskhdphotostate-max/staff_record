@@ -232,7 +232,10 @@ def generate_student_pdf(data_rows):
         pdf.cell(0, 8, f"Roll No: {s.get('id')} | Name: {s.get('name')}", 0, 1, "L", True)
         pdf.set_font("Arial", "", 10)
         pdf.cell(0, 6, f"Father Name: {s.get('father_name')}  |  Class: {s.get('class_name')}", 0, 1, "L")
-        pdf.cell(0, 6, f"Monthly Fee: Rs. {s.get('monthly_fee', 0):,}  |  Yearly Fee: Rs. {s.get('yearly_fee', 0):,}", 0, 1, "L")
+        
+        m_fee = int(s.get('monthly_fee') or 0)
+        y_fee = int(s.get('yearly_fee') or 0)
+        pdf.cell(0, 6, f"Monthly Fee: Rs. {m_fee:,}  |  Yearly Fee: Rs. {y_fee:,}", 0, 1, "L")
         pdf.ln(3)
     return pdf.output(dest='S').encode('latin1')
 
@@ -273,12 +276,15 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
         if status == "Paid":
             remarks_str = f"Paid for {target_month}"
 
+        m_fee = int(s.get('monthly_fee') or 0)
+        y_fee = int(s.get('yearly_fee') or 0)
+
         pdf.cell(20, 7, s.get("id", ""), 1, 0, "C")
         pdf.cell(35, 7, s.get("class_name", ""), 1, 0, "C")
         pdf.cell(45, 7, s.get("name", ""), 1, 0, "L")
         pdf.cell(45, 7, s.get("father_name", ""), 1, 0, "L")
-        pdf.cell(22, 7, f"Rs. {s.get('monthly_fee', 0):,}", 1, 0, "R")
-        pdf.cell(22, 7, f"Rs. {s.get('yearly_fee', 0):,}", 1, 0, "R")
+        pdf.cell(22, 7, f"Rs. {m_fee:,}", 1, 0, "R")
+        pdf.cell(22, 7, f"Rs. {y_fee:,}", 1, 0, "R")
         pdf.cell(26, 7, status, 1, 0, "C")
         pdf.cell(62, 7, remarks_str, 1, 0, "L")
         pdf.ln()
@@ -505,7 +511,9 @@ with tab_students:
                 col_i.markdown(f"**{st_item['name']}** (`{st_item['id']}`)")
                 col_i.caption(f"Father: {st_item['father_name']}")
                 
-                col_d.markdown(f"Monthly: **Rs. {st_item.get('monthly_fee', 0):,}** | Yearly: **Rs. {st_item.get('yearly_fee', 0):,}**")
+                m_f = int(st_item.get('monthly_fee') or 0)
+                y_f = int(st_item.get('yearly_fee') or 0)
+                col_d.markdown(f"Monthly: **Rs. {m_f:,}** | Yearly: **Rs. {y_f:,}**")
                 
                 if col_btn.button("🗑️ Delete", key=f"del_std_{st_item['id']}"):
                     delete_student(st_item['id'])
@@ -560,8 +568,8 @@ with tab_fee:
             "id": s_obj["id"],
             "name": s_obj["name"],
             "class_name": s_obj.get("class_name", "—"),
-            "monthly_fee": s_obj.get("monthly_fee", 0),
-            "yearly_fee": s_obj.get("yearly_fee", 0),
+            "monthly_fee": int(s_obj.get("monthly_fee") or 0),
+            "yearly_fee": int(s_obj.get("yearly_fee") or 0),
             "status": status
         })
     
