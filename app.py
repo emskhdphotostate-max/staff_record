@@ -191,22 +191,6 @@ def mark_fee_paid(student_id, month_year, amount):
             "amount": amount
         }).execute()
 
-def fetch_attendance(student_id, date_str):
-    res = sb.table("attendance").select("*").eq("student_id", student_id).eq("date", date_str).execute()
-    return res.data[0] if res.data else None
-
-def save_attendance(student_id, date_str, status, month_year):
-    existing = fetch_attendance(student_id, date_str)
-    if existing:
-        sb.table("attendance").update({"status": status}).eq("id", existing["id"]).execute()
-    else:
-        sb.table("attendance").insert({
-            "student_id": student_id,
-            "date": date_str,
-            "status": status,
-            "month_year": month_year
-        }).execute()
-
 # ------------------------------------------------------------------
 # PDF Functions
 # ------------------------------------------------------------------
@@ -248,6 +232,44 @@ def generate_student_pdf(data_rows):
         pdf.ln(3)
     return pdf.output(dest='S').encode('latin1')
 
+def generate_monthly_attendance_pdf(class_name, month_year_str, students_list):
+    # Landscape orientation for wide attendance grid
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 14)
+    
+    # Title
+    pdf.cell(0, 8, f"Excellence Model School - Monthly Attendance Sheet", 0, 1, "C")
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(0, 6, f"Class: {class_name}   |   Month: {month_year_str}", 0, 1, "C")
+    pdf.ln(4)
+
+    # Table Header setup
+    pdf.set_font("Arial", "B", 8)
+    pdf.set_fill_color(230, 230, 250)
+    
+    # Widths: Roll No (22), Student Name (45), Days 1-31 (approx 6.2 each for total 275mm width landscape)
+    pdf.cell(22, 7, "Roll No", 1, 0, "C", True)
+    pdf.cell(48, 7, "Student Name", 1, 0, "C", True)
+    
+    # Days 1 to 31 headers
+    for d in range(1, 32):
+        pdf.cell(6.5, 7, str(d), 1, 0, "C", True)
+    pdf.ln()
+
+    # Students Rows
+    pdf.set_font("Arial", "", 8)
+    for s in students_list:
+        pdf.cell(22, 6, s.get("id", ""), 1, 0, "C")
+        pdf.cell(48, 6, s.get("name", ""), 1, 0, "L")
+        
+        # Empty cells for manual pen marking
+        for d in range(1, 32):
+            pdf.cell(6.5, 6, "", 1, 0, "C")
+        pdf.ln()
+
+    return pdf.output(dest='S').encode('latin1')
+
 # ------------------------------------------------------------------
 # Data Fetches & Header
 # ------------------------------------------------------------------
@@ -282,7 +304,7 @@ with col_refresh:
         st.rerun()
 
 # ------------------------------------------------------------------
-# TABS SETUP (Added Attendance Tab)
+# TABS SETUP
 # ------------------------------------------------------------------
 tab_staff, tab_students, tab_fee, tab_attendance = st.tabs([
     "👥 Staff Management", 
@@ -346,7 +368,7 @@ with tab_staff:
 
     rows = staff
     if campus_filter != "All Campuses":
-        rows = [s for s in rows if s.get("campus") == campus_filter]
+        rows = [s for s in rows if s.get("campus"] == campus_filter]
     if search.strip():
         q = search.strip().lower()
         rows = [s for s in rows if any(q in (v or "").lower() for v in [s.get("name"), s.get("designation"), s.get("campus")])]
@@ -523,57 +545,47 @@ with tab_fee:
 
 
 # ==================================================================
-# TAB 4: ATTENDANCE SHEET (Monthly Grid)
+# TAB 4: MONTHLY ATTENDANCE PRINTABLE SHEET
 # ==================================================================
 with tab_attendance:
-    st.header("📅 Monthly Class Attendance Sheet")
-    st.markdown("Select class and date to mark or check student attendance.")
+    st.header("📅 Monthly Printable Attendance Sheets")
+    st.markdown("Generate and print blank monthly attendance sheets for teachers to fill manually.")
 
-    at_c1, at_c2, at_c3 = st.columns(3)
+    at_c1, at_c2 = st.columns(2)
     with at_c1:
-        att_class_sel = st.selectbox("Select Class", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="att_cls")
+        att_class_sel = st.selectbox("Select Class for Attendance Sheet", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="att_cls_sheet")
     with at_c2:
-        att_month_sel = st.selectbox("Select Month", ["August 2026", "September 2026", "October 2026", "November 2026", "December 2026", "January 2027", "February 2027", "March 2027", "April 2027", "May 2027", "June 2027", "July 2027"])
-    with at_c3:
-        att_date_sel = st.date_input("Select Specific Date", datetime.now())
+        att_month_sel = st.selectbox("Select Month & Year", ["August 2026", "September 2026", "October 2026", "November 2026", "December 2026", "January 2027", "February 2027", "March 2027", "April 2027", "May 2027", "June 2027", "July 2027"], key="att_mnth_sheet")
 
     st.divider()
 
-    att_students = [s for s in students if s.get("class_name") == att_class_sel]
-    date_str_formatted = att_date_sel.strftime("%Y-%m-%d")
+    class_att_students = [s for s in students if s.get("class_name") == att_class_sel]
 
-    st.subheader(f"📋 Attendance for {att_class_sel} — Date: {date_str_formatted}")
+    col_info, col_btn = st.columns([4, 3])
+    with col_info:
+        st.subheader(f"📋 {att_class_sel} Student List ({len(class_att_students)} Students)")
+        st.write(f"Clicking the button will generate a landscape PDF containing all students with dates 1 to 31 for **{att_month_sel}**.")
+    
+    with col_btn:
+        st.write("")
+        st.write("")
+        if class_att_students:
+            pdf_bytes = generate_monthly_attendance_pdf(att_class_sel, att_month_sel, class_att_students)
+            st.download_button(
+                "📄 Download Monthly Attendance PDF", 
+                pdf_bytes, 
+                f"Attendance_{att_class_sel}_{att_month_sel}.pdf", 
+                "application/pdf", 
+                use_container_width=True
+            )
+        else:
+            st.warning("No students found in this class to generate sheet.")
 
-    if not att_students:
-        st.info(f"No students found in {att_class_sel}.")
+    st.divider()
+    
+    if class_att_students:
+        for st_item in class_att_students:
+            with st.container(border=True):
+                st.markdown(f"**{st_item['name']}** (`{st_item['id']}`) — Father: {st_item['father_name']}")
     else:
-        with st.form("attendance_form"):
-            attendance_inputs = {}
-            for st_obj in att_students:
-                existing_att = fetch_attendance(st_obj["id"], date_str_formatted)
-                current_status = existing_att["status"] if existing_att else "Present"
-                
-                col_name, col_radio = st.columns([3, 3])
-                col_name.markdown(f"**{st_obj['name']}** (`{st_obj['id']}`)")
-                
-                status_options = ["Present", "Absent", "Leave"]
-                default_idx = status_options.index(current_status) if current_status in status_options else 0
-                
-                attendance_inputs[st_obj["id"]] = col_radio.radio(
-                    f"Status {st_obj['id']}", 
-                    status_options, 
-                    index=default_idx, 
-                    horizontal=True, 
-                    label_visibility="collapsed",
-                    key=f"att_radio_{st_obj['id']}"
-                )
-                st.write("")
-
-            submit_attendance = st.form_submit_button("💾 Save Attendance", type="primary")
-            if submit_attendance:
-                try:
-                    for st_id, stat in attendance_inputs.items():
-                        save_attendance(st_id, date_str_formatted, stat, att_month_sel)
-                    st.success(f"Attendance successfully saved for {date_str_formatted}!")
-                except Exception as e:
-                    st.error(f"Error saving attendance: {e}")
+        st.info(f"No students enrolled in {att_class_sel} yet.")
