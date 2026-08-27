@@ -1,2 +1,5 @@
 streamlit>=1.32
 supabase>=2.3.4
+streamlit
+supabase
+fpdf
