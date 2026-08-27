@@ -5,7 +5,8 @@ from fpdf import FPDF
 import os
 import base64
 import pandas as pd
-from datetime import datetime, calendar if 'calendar' in globals() else datetime
+from datetime import datetime
+import calendar
 
 # ------------------------------------------------------------------
 # Page setup
