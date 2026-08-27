@@ -320,27 +320,31 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
         pdf.cell(30, 7, s.get("class_name", ""), 1, 0, "C")
         pdf.cell(42, 7, s.get("name", ""), 1, 0, "L")
         pdf.cell(42, 7, s.get("father_name", ""), 1, 0, "L")
-        pdf.cell(24, 7, f"Rs. {m_fee:,}", 1, 0, "R")
-        pdf.cell(24, 7, f"Rs. {y_fee:,}", 1, 0, "R")
         
-        # Status Cell Conditional Coloring (Red background + White text if Pending)
-        fill_status = False
-        if m_stat == "Paid" and y_stat == "Paid":
-            pdf.set_text_color(0, 128, 0) # Green text for fully paid
-            fill_status = False
-        elif m_stat == "Pending" and y_stat == "Pending":
+        # Monthly Fee Column (Red background + White text if Pending)
+        if m_stat == "Pending":
             pdf.set_fill_color(220, 53, 69)  # Red background
             pdf.set_text_color(255, 255, 255) # White text
-            fill_status = True
+            fill_m = True
         else:
-            pdf.set_fill_color(255, 193, 7)  # Orange/Yellow background for partial
-            pdf.set_text_color(0, 0, 0)      # Black text
-            fill_status = True
-            
-        pdf.cell(25, 7, status_str, 1, 0, "C", fill=fill_status)
+            fill_m = False
+        pdf.cell(24, 7, f"Rs. {m_fee:,}", 1, 0, "R", fill=fill_m)
         
-        # Reset text color and fill for remarks and next rows
+        # Reset colors for Yearly Fee column if needed
         pdf.set_text_color(0, 0, 0)
+        
+        # Yearly Fee Column (Red background + White text if Pending)
+        if y_stat == "Pending":
+            pdf.set_fill_color(220, 53, 69)  # Red background
+            pdf.set_text_color(255, 255, 255) # White text
+            fill_y = True
+        else:
+            fill_y = False
+        pdf.cell(24, 7, f"Rs. {y_fee:,}", 1, 0, "R", fill=fill_y)
+        
+        # Reset text color and fill for Status, Remarks and next rows
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(25, 7, status_str, 1, 0, "C")
         pdf.cell(70, 7, remarks_str, 1, 0, "L")
         pdf.ln()
 
