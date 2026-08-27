@@ -3,6 +3,7 @@ from supabase import create_client, Client
 import re
 from fpdf import FPDF
 import os
+import base64
 
 # ------------------------------------------------------------------
 # Page setup (Ek hi dafa top par config aur wide layout)
@@ -53,6 +54,12 @@ def get_logo_path():
             return filename
     return None
 
+def get_image_base64(path):
+    if path and os.path.exists(path):
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    return None
+
 # ------------------------------------------------------------------
 # Secure Password Gate (Using st.secrets["APP_PASSWORD"])
 # ------------------------------------------------------------------
@@ -67,24 +74,17 @@ def check_password():
     if "password_correct" not in st.session_state or not st.session_state["password_correct"]:
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.markdown(
-                """
-                <div style="background: linear-gradient(135deg, #4B1E82, #17091F); padding: 35px; border-radius: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.2); text-align: center; color: white; margin-top: 30px;">
-                """,
-                unsafe_allow_html=True
-            )
-            
-            # Show Logo on Login
             logo_path = get_logo_path()
-            if logo_path:
-                st.image(logo_path, width=130)
-            else:
-                st.markdown("<div style='font-size: 45px; margin-bottom: 10px;'>🎓</div>", unsafe_allow_html=True)
-                
+            logo_base64 = get_image_base64(logo_path)
+            
+            logo_html = f'<img src="data:image/png;base64,{logo_base64}" width="120" style="margin-bottom: 10px;" />' if logo_base64 else '<div style="font-size: 45px; margin-bottom: 10px;">🎓</div>'
+            
             st.markdown(
-                """
-                    <h1 style="margin: 15px 0 5px 0; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: 1px;">EXCELLENCE MODEL SCHOOL</h1>
-                    <p style="margin: 0; font-size: 13px; font-weight: 400; color: #E7D6F7; letter-spacing: 0.5px;">Staff Record Book — Secure Login</p>
+                f"""
+                <div style="background: linear-gradient(135deg, #4B1E82, #17091F); padding: 35px; border-radius: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.2); text-align: center; color: white; margin-top: 30px;">
+                    {logo_html}
+                    <h1 style="margin: 15px 0 5px 0; font-size: 24px; font-weight: 800; color: #ffffff !important; letter-spacing: 1px;">EXCELLENCE MODEL SCHOOL</h1>
+                    <p style="margin: 0; font-size: 13px; font-weight: 400; color: #E7D6F7 !important; letter-spacing: 0.5px;">Staff Record Book — Secure Login</p>
                 </div>
                 """,
                 unsafe_allow_html=True
