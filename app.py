@@ -203,16 +203,33 @@ def fetch_fee_record(student_id, month_year):
     res = sb.table("fee_records").select("*").eq("student_id", student_id).eq("month_year", month_year).execute()
     return res.data[0] if res.data else None
 
-def mark_fee_paid(student_id, month_year, amount):
+def get_fee_statuses(student_id, month_year):
+    rec = fetch_fee_record(student_id, month_year)
+    if not rec or not rec.get("status"):
+        return "Pending", "Pending"
+    val = rec.get("status", "")
+    m_stat = "Paid" if "Monthly:Paid" in val else "Pending"
+    y_stat = "Paid" if "Yearly:Paid" in val else "Pending"
+    if "Monthly:" not in val and "Yearly:" not in val:
+        if val == "Paid":
+            m_stat = "Paid"
+            y_stat = "Paid"
+        else:
+            m_stat = "Pending"
+            y_stat = "Pending"
+    return m_stat, y_stat
+
+def set_fee_status(student_id, month_year, m_stat, y_stat, amount=0):
     existing = fetch_fee_record(student_id, month_year)
     today = datetime.now().strftime("%Y-%m-%d")
+    status_str = f"Monthly:{m_stat} | Yearly:{y_stat}"
     if existing:
-        sb.table("fee_records").update({"status": "Paid", "paid_date": today}).eq("id", existing["id"]).execute()
+        sb.table("fee_records").update({"status": status_str, "paid_date": today}).eq("id", existing["id"]).execute()
     else:
         sb.table("fee_records").insert({
             "student_id": student_id,
             "month_year": month_year,
-            "status": "Paid",
+            "status": status_str,
             "paid_date": today,
             "amount": amount
         }).execute()
@@ -288,17 +305,10 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
     total_yearly = 0
 
     for s in students_list:
-        rec = fetch_fee_record(s["id"], target_month)
-        status = rec["status"] if rec else "Pending"
+        m_stat, y_stat = get_fee_statuses(s["id"], target_month)
+        status_str = f"M: {m_stat} | Y: {y_stat}"
         
-        all_recs = fetch_fee_records_for_student(s["id"])
-        pending_months = [r["month_year"] for r in all_recs if r.get("status") == "Pending"]
-        if status == "Pending" and target_month not in pending_months:
-            pending_months.append(target_month)
-        
-        remarks_str = ", ".join(pending_months) if pending_months else "All Clear"
-        if status == "Paid":
-            remarks_str = f"Paid for {target_month}"
+        remarks_str = f"Monthly: {m_stat}, Yearly: {y_stat}"
 
         m_fee = int(s.get('monthly_fee') or 3500)
         y_fee = int(s.get('yearly_fee') or 5000)
@@ -312,7 +322,7 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
         pdf.cell(45, 7, s.get("father_name", ""), 1, 0, "L")
         pdf.cell(22, 7, f"Rs. {m_fee:,}", 1, 0, "R")
         pdf.cell(22, 7, f"Rs. {y_fee:,}", 1, 0, "R")
-        pdf.cell(26, 7, status, 1, 0, "C")
+        pdf.cell(26, 7, status_str, 1, 0, "C")
         pdf.cell(62, 7, remarks_str, 1, 0, "L")
         pdf.ln()
 
@@ -598,7 +608,7 @@ elif menu_choice == "💳 Fee Management":
     st.markdown("""
     <div class="dashboard-header">
         <h1>Monthly Fee Tracker & Ledger</h1>
-        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Manage payment statuses, pending dues and comprehensive printable ledgers</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Manage independent Monthly and Yearly payment statuses and ledgers</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -627,7 +637,6 @@ elif menu_choice == "💳 Fee Management":
                 use_container_width=True
             )
         
-    # Search box for Student ID or Name
     fee_search_query = st.text_input("🔍 Search Student (by ID or Name)", placeholder="Type student name or ID (e.g. STD-001, Shehzad)...")
 
     st.divider()
@@ -637,34 +646,33 @@ elif menu_choice == "💳 Fee Management":
     else:
         fee_target_students = [s for s in students if s.get("class_name") == fee_class_sel]
     
-    # Filter by search query if provided
     if fee_search_query.strip():
         q_fee = fee_search_query.strip().lower()
         fee_target_students = [s for s in fee_target_students if q_fee in s.get("id", "").lower() or q_fee in s.get("name", "").lower()]
 
     processed_fee_list = []
     for s_obj in fee_target_students:
-        rec = fetch_fee_record(s_obj["id"], fee_month_input)
-        status = rec["status"] if rec else "Pending"
+        m_stat, y_stat = get_fee_statuses(s_obj["id"], fee_month_input)
         processed_fee_list.append({
             "id": s_obj["id"],
             "name": s_obj["name"],
             "class_name": s_obj.get("class_name", "—"),
             "monthly_fee": int(s_obj.get("monthly_fee") or 3500),
             "yearly_fee": int(s_obj.get("yearly_fee") or 5000),
-            "status": status
+            "monthly_status": m_stat,
+            "yearly_status": y_stat
         })
     
     tot_s = len(processed_fee_list)
-    paid_s = sum(1 for s in processed_fee_list if s['status'] == 'Paid')
-    pend_s = sum(1 for s in processed_fee_list if s['status'] == 'Pending')
-    pend_amt = sum(s['monthly_fee'] for s in processed_fee_list if s['status'] == 'Pending')
+    paid_monthly = sum(1 for s in processed_fee_list if s['monthly_status'] == 'Paid')
+    pend_monthly = sum(1 for s in processed_fee_list if s['monthly_status'] == 'Pending')
+    pend_amt = sum(s['monthly_fee'] for s in processed_fee_list if s['monthly_status'] == 'Pending')
     
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Total Students", tot_s)
-    m2.metric("Paid Clear", paid_s)
-    m3.metric("Pending Dues", pend_s)
-    m4.metric("Pending Amount", f"Rs. {pend_amt:,}")
+    m2.metric("Monthly Paid", paid_monthly)
+    m3.metric("Monthly Pending", pend_monthly)
+    m4.metric("Pending Monthly Dues", f"Rs. {pend_amt:,}")
     
     st.subheader(f"📋 Fee Status Ledger — {fee_class_sel} ({fee_month_input})")
     
@@ -673,31 +681,41 @@ elif menu_choice == "💳 Fee Management":
     else:
         for s_item in processed_fee_list:
             with st.container(border=True):
-                col_info, col_status, col_action = st.columns([4, 2, 2])
+                col_info, col_m, col_y = st.columns([3, 3, 3])
                 
                 with col_info:
                     st.markdown(f"**{s_item['name']}** (`{s_item['id']}`) — *{s_item['class_name']}*")
                     st.caption(f"Monthly: Rs. {s_item['monthly_fee']:,} | Yearly: Rs. {s_item['yearly_fee']:,}")
                     
-                with col_status:
-                    if s_item["status"] == "Paid":
-                        st.markdown("🟢 **<span style='color:green;'>PAID / CLEAR</span>**", unsafe_allow_html=True)
-                    else:
-                        st.markdown("🔴 **<span style='color:red;'>PENDING</span>**", unsafe_allow_html=True)
-                        
-                with col_action:
-                    if s_item["status"] == "Pending":
-                        if st.button("✅ Collect Fee", key=f"pay_btn_{s_item['id']}", type="primary"):
-                            mark_fee_paid(s_item["id"], fee_month_input, s_item["monthly_fee"])
-                            st.success(f"Fee collected successfully for {s_item['name']}!")
+                with col_m:
+                    st.write("📅 **Monthly Fee**")
+                    if s_item["monthly_status"] == "Paid":
+                        st.markdown("🟢 **Paid**")
+                        if st.button("↩️ Undo Monthly", key=f"undo_m_{s_item['id']}"):
+                            set_fee_status(s_item["id"], fee_month_input, "Pending", s_item["yearly_status"])
+                            st.warning(f"Monthly status set to Pending for {s_item['name']}.")
                             st.rerun()
                     else:
-                        if st.button("↩️ Undo", key=f"undo_btn_{s_item['id']}"):
-                            rec = fetch_fee_record(s_item["id"], fee_month_input)
-                            if rec:
-                                sb.table("fee_records").update({"status": "Pending"}).eq("id", rec["id"]).execute()
-                                st.warning(f"Status changed back to Pending for {s_item['name']}.")
-                                st.rerun()
+                        st.markdown("🔴 **Pending**")
+                        if st.button("✅ Pay Monthly", key=f"pay_m_{s_item['id']}", type="primary"):
+                            set_fee_status(s_item["id"], fee_month_input, "Paid", s_item["yearly_status"], s_item["monthly_fee"])
+                            st.success(f"Monthly fee collected for {s_item['name']}!")
+                            st.rerun()
+                            
+                with col_y:
+                    st.write("⭐ **Yearly Fee**")
+                    if s_item["yearly_status"] == "Paid":
+                        st.markdown("🟢 **Paid**")
+                        if st.button("↩️ Undo Yearly", key=f"undo_y_{s_item['id']}"):
+                            set_fee_status(s_item["id"], fee_month_input, s_item["monthly_status"], "Pending")
+                            st.warning(f"Yearly status set to Pending for {s_item['name']}.")
+                            st.rerun()
+                    else:
+                        st.markdown("🔴 **Not Paid**")
+                        if st.button("✅ Pay Yearly", key=f"pay_y_{s_item['id']}", type="primary"):
+                            set_fee_status(s_item["id"], fee_month_input, s_item["monthly_status"], "Paid", s_item["yearly_fee"])
+                            st.success(f"Yearly fee collected for {s_item['name']}!")
+                            st.rerun()
 
 # ==================================================================
 # 5. ATTENDANCE SHEETS
