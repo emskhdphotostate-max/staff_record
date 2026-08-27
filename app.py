@@ -4,6 +4,7 @@ import re
 from fpdf import FPDF
 import os
 import base64
+import pandas as pd
 
 # ------------------------------------------------------------------
 # Page setup (Ek hi dafa top par config aur wide layout)
@@ -319,6 +320,31 @@ with st.sidebar:
     if st.button("🔒 Logout", use_container_width=True):
         st.session_state["password_correct"] = False
         st.rerun()
+
+# ------------------------------------------------------------------
+# Analytics / Charts Section
+# ------------------------------------------------------------------
+if staff:
+    with st.expander("📊 Staff Analytics & Visual Charts", expanded=False):
+        df_staff = pd.DataFrame(staff)
+        
+        col_c1, col_c2 = st.columns(2)
+        
+        with col_c1:
+            st.markdown("##### 🏫 Staff Count by Campus")
+            if "campus" in df_staff.columns:
+                campus_counts = df_staff["campus"].fillna("Not Specified").value_counts()
+                st.bar_chart(campus_counts)
+            else:
+                st.info("No campus data available.")
+                
+        with col_c2:
+            st.markdown("##### 👩‍🏫 Staff Count by Designation")
+            if "designation" in df_staff.columns:
+                desig_counts = df_staff["designation"].fillna("Not Specified").value_counts()
+                st.bar_chart(desig_counts)
+            else:
+                st.info("No designation data available.")
 
 # ------------------------------------------------------------------
 # Add staff form
