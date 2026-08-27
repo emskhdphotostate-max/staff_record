@@ -51,6 +51,14 @@ st.markdown(f"""
         font-weight: 700 !important;
         font-size: 15px !important;
     }}
+
+    /* Make the password input box border clearly visible */
+    div[data-testid="stTextInput"] div[data-baseweb="input"] {{
+        border: 2px solid {PURPLE_LIGHT} !important;
+        border-radius: 8px !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 2px 5px rgba(75, 30, 130, 0.1);
+    }}
 </style>
 """, unsafe_allow_html=True)
 
