@@ -1,85 +1,19 @@
 import streamlit as st
-
-# Yeh line page ko wide layout par set kar degi aur uper ki space khatam kar degi
-st.set_page_config(
-    page_title="Staff Record Book",
-    page_icon="📚",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-st.markdown(
-    """
-    <style>
-        .block-container {
-            padding-top: 1rem !important; /* Uper ki extra space ko kam kar dega */
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-
-
-
-
-import streamlit as st
-
-def check_password():
-    def password_entered():
-        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]
-        else:
-            st.session_state["password_correct"] = False
-
-    if "password_correct" not in st.session_state or not st.session_state["password_correct"]:
-        # --- STYLISH LOGIN SCREEN ---
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown(
-                """
-                <div style="background: linear-gradient(135deg, #4b134f, #2c3e50); padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; color: white; margin-top: 50px;">
-                    <h2 style="margin-bottom: 10px; font-family: sans-serif;">EXCELLENCE MODEL SCHOOL</h2>
-                    <h4 style="margin-top: 0; font-weight: 350; color: #dcdde1;">Staff Record Book - Secure Login</h4>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            st.write("")
-            
-            # Input box inside the flow
-            st.text_input(
-                "🔐 Enter Password to Access:", 
-                type="password", 
-                on_change=password_entered, 
-                key="password"
-            )
-            
-            if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-                st.error("😕 Incorrect password, please try again!")
-                
-        return False
-    else:
-        return True
-
-if not check_password():
-    st.stop()
-
-
-import streamlit as st
 from supabase import create_client, Client
 import re
+from fpdf import FPDF
 
 # ------------------------------------------------------------------
-# Page setup
+# Page setup (Ek hi dafa top par config aur wide layout)
 # ------------------------------------------------------------------
 st.set_page_config(
     page_title="Excellence Model School — Staff Register",
     page_icon="🎓",
     layout="wide",
+    initial_sidebar_state="expanded"
 )
 
+# Custom CSS for styling and removing top gaps
 PURPLE = "#4B1E82"
 PURPLE_DEEP = "#17091F"
 PURPLE_LIGHT = "#7A2FC2"
@@ -88,6 +22,7 @@ CREAM = "#F5F4F7"
 st.markdown(f"""
 <style>
     .stApp {{ background-color: {CREAM}; }}
+    .block-container {{ padding-top: 1rem !important; }}
     .ems-header {{
         background: linear-gradient(115deg, {PURPLE} 0%, {PURPLE_DEEP} 100%);
         padding: 22px 28px; border-radius: 10px; margin-bottom: 18px; color: white;
@@ -107,21 +42,43 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
-# Optional password gate — set app_password in secrets to enable.
-# Leave it out of secrets.toml to disable this screen entirely.
+# Secure Password Gate (Using st.secrets["APP_PASSWORD"])
 # ------------------------------------------------------------------
-if "app_password" in st.secrets:
-    if not st.session_state.get("authed"):
-        st.markdown('<div class="ems-header"><p class="eyebrow">Excellence Model School</p>'
-                    '<h1>Staff Register — Login</h1></div>', unsafe_allow_html=True)
-        pw = st.text_input("Password", type="password")
-        if st.button("Enter", type="primary"):
-            if pw == st.secrets["app_password"]:
-                st.session_state.authed = True
-                st.rerun()
-            else:
-                st.error("Wrong password.")
-        st.stop()
+def check_password():
+    def password_entered():
+        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state or not st.session_state["password_correct"]:
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown(
+                """
+                <div style="background: linear-gradient(135deg, #4b134f, #2c3e50); padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; color: white; margin-top: 50px;">
+                    <h2 style="margin-bottom: 10px; font-family: sans-serif;">EXCELLENCE MODEL SCHOOL</h2>
+                    <h4 style="margin-top: 0; font-weight: 350; color: #dcdde1;">Staff Record Book - Secure Login</h4>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            st.write("")
+            st.text_input(
+                "🔐 Enter Password to Access:", 
+                type="password", 
+                on_change=password_entered, 
+                key="password"
+            )
+            if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+                st.error("😕 Incorrect password, please try again!")
+        return False
+    else:
+        return True
+
+if not check_password():
+    st.stop()
 
 # ------------------------------------------------------------------
 # Supabase connection
@@ -144,8 +101,7 @@ DEFAULT_CAMPUSES = [
 ]
 
 # ------------------------------------------------------------------
-# Data access helpers (always hit Supabase fresh — no caching — so
-# every user sees the latest data on their next rerun/refresh)
+# Data access helpers
 # ------------------------------------------------------------------
 def fetch_staff():
     res = sb.table("staff").select("*").order("id").execute()
@@ -203,7 +159,40 @@ def remove_custom_field(fid):
     sb.table("custom_fields").delete().eq("id", fid).execute()
 
 # ------------------------------------------------------------------
-# Header
+# PDF Generation Function
+# ------------------------------------------------------------------
+def generate_pdf(data_rows, custom_fields_list):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Excellence Model School - Staff Report", 0, 1, "C")
+    pdf.set_font("Arial", "", 10)
+    pdf.cell(0, 8, f"Total Records: {len(data_rows)}", 0, 1, "C")
+    pdf.ln(5)
+
+    for s in data_rows:
+        pdf.set_font("Arial", "B", 11)
+        pdf.set_fill_color(230, 230, 250)
+        pdf.cell(0, 8, f"ID: {s.get('id')} | Name: {s.get('name')}", 0, 1, "L", True)
+        
+        pdf.set_font("Arial", "", 10)
+        pdf.cell(0, 6, f"Designation: {s.get('designation')}  |  Campus: {s.get('campus', '—')}", 0, 1, "L")
+        pdf.cell(0, 6, f"Father Name: {s.get('father_name', '—')}  |  Class Teacher: {s.get('class_teacher_of', '—')}", 0, 1, "L")
+        pdf.cell(0, 6, f"Subject Teacher: {s.get('subject_teacher', '—')}", 0, 1, "L")
+        
+        if custom_fields_list:
+            extras = []
+            for f in custom_fields_list:
+                val = s.get('custom', {}).get(f['id'], '—')
+                extras.append(f"{f['label']}: {val}")
+            pdf.cell(0, 6, " | ".join(extras), 0, 1, "L")
+        
+        pdf.ln(3)
+    
+    return pdf.output(dest='S').encode('latin1')
+
+# ------------------------------------------------------------------
+# Header & Refresh
 # ------------------------------------------------------------------
 staff = fetch_staff()
 designations = fetch_designations()
@@ -316,7 +305,7 @@ with st.expander("➕ Add New Staff", expanded=False):
                 st.rerun()
 
 # ------------------------------------------------------------------
-# Filtered list
+# Filtered list & PDF Download Button
 # ------------------------------------------------------------------
 rows = staff
 if campus_filter != "All Campuses":
@@ -329,7 +318,19 @@ if search.strip():
         return any(q in (v or "").lower() for v in fields)
     rows = [s for s in rows if matches(s)]
 
-st.subheader(f"Records ({len(rows)})")
+col_title, col_pdf = st.columns([4, 2])
+with col_title:
+    st.subheader(f"Records ({len(rows)})")
+with col_pdf:
+    if rows:
+        pdf_data = generate_pdf(rows, custom_fields)
+        st.download_button(
+            label="📄 Download PDF Report",
+            data=pdf_data,
+            file_name="staff_record_report.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
 
 if not rows:
     st.info("No matching staff records. Add one above, or adjust your filters." if staff else
