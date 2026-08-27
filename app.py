@@ -6,6 +6,7 @@ import os
 import base64
 import pandas as pd
 from datetime import datetime
+import io
 
 # ------------------------------------------------------------------
 # Page setup
@@ -315,7 +316,6 @@ def generate_collection_report_pdf(title_str, records_list, total_amt):
         pdf.cell(45, 7, f"Rs. {amt:,}", 1, 0, "R")
         pdf.ln()
 
-    # Total Summary Row
     pdf.set_font("Arial", "B", 10)
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(140, 8, "Total Collection", 1, 0, "R", True)
@@ -575,42 +575,126 @@ elif menu_choice == "🎓 Student Admissions":
     st.markdown("""
     <div class="dashboard-header">
         <h1>Student Admissions & Class Records</h1>
-        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Register students with monthly/yearly fee setup and view class directories</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Register students, manage fees, and export/import student lists via CSV/Excel</p>
     </div>
     """, unsafe_allow_html=True)
     
-    with st.form("student_admission_form", clear_on_submit=True):
-        st.subheader("New Student Registration Form")
-        sc1, sc2 = st.columns(2)
+    tab_single, tab_bulk = st.tabs(["➕ Single Admission", "📥 CSV / Excel Import & Export"])
+    
+    with tab_single:
+        with st.form("student_admission_form", clear_on_submit=True):
+            st.subheader("New Student Registration Form")
+            sc1, sc2 = st.columns(2)
+            
+            with sc1:
+                std_name = st.text_input("Student Full Name *")
+                std_father = st.text_input("Father's Name *")
+                std_class = st.selectbox("Assign Class", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"])
+                
+            with sc2:
+                std_fee = st.number_input("Monthly Fee Amount (Rs.)", min_value=0, value=3500, step=500)
+                std_yearly_fee = st.number_input("Yearly Fee / Salana Fee (Rs.)", min_value=0, value=5000, step=500)
+                
+            if st.form_submit_button("Register Student", type="primary"):
+                if std_name.strip() and std_father.strip():
+                    try:
+                        new_s_id = next_student_id(students)
+                        student_data = {
+                            "id": new_s_id,
+                            "name": std_name.strip(),
+                            "father_name": std_father.strip(),
+                            "class_name": std_class,
+                            "monthly_fee": std_fee,
+                            "yearly_fee": std_yearly_fee
+                        }
+                        add_student(student_data)
+                        st.success(f"Student {std_name} ({new_s_id}) successfully enrolled in {std_class}!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error saving student: {e}")
+                else:
+                    st.warning("Please fill in Student Name and Father's Name.")
+
+    with tab_bulk:
+        st.subheader("📁 Bulk Import / Export Students (CSV)")
+        st.write("You can download the existing student list or a template as a CSV file, fill it in Excel/Google Sheets, and upload it back here to register multiple students at once.")
         
-        with sc1:
-            std_name = st.text_input("Student Full Name *")
-            std_father = st.text_input("Father's Name *")
-            std_class = st.selectbox("Assign Class", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"])
-            
-        with sc2:
-            std_fee = st.number_input("Monthly Fee Amount (Rs.)", min_value=0, value=3500, step=500)
-            std_yearly_fee = st.number_input("Yearly Fee / Salana Fee (Rs.)", min_value=0, value=5000, step=500)
-            
-        if st.form_submit_button("Register Student", type="primary"):
-            if std_name.strip() and std_father.strip():
-                try:
-                    new_s_id = next_student_id(students)
-                    student_data = {
-                        "id": new_s_id,
-                        "name": std_name.strip(),
-                        "father_name": std_father.strip(),
-                        "class_name": std_class,
-                        "monthly_fee": std_fee,
-                        "yearly_fee": std_yearly_fee
-                    }
-                    add_student(student_data)
-                    st.success(f"Student {std_name} ({new_s_id}) successfully enrolled in {std_class}!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error saving student: {e}")
+        col_ex1, col_ex2 = st.columns(2)
+        with col_ex1:
+            # Export CSV button
+            if students:
+                df_export = pd.DataFrame(students)[["id", "name", "father_name", "class_name", "monthly_fee", "yearly_fee"]]
+                df_export.columns = ["student_id", "name", "father_name", "class_name", "monthly_fee", "yearly_fee"]
+                csv_data = df_export.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    "📥 Download Existing Students (CSV)",
+                    data=csv_data,
+                    file_name="students_list.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
             else:
-                st.warning("Please fill in Student Name and Father's Name.")
+                st.info("No students available to export.")
+                
+        with col_ex2:
+            # Download Template CSV
+            template_df = pd.DataFrame([{
+                "name": "Ali Khan",
+                "father_name": "Muhammad Khan",
+                "class_name": "Class 1",
+                "monthly_fee": 3500,
+                "yearly_fee": 5000
+            }])
+            template_csv = template_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "📋 Download CSV Template",
+                data=template_csv,
+                file_name="student_import_template.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+            
+        st.divider()
+        st.write("### Upload Filled CSV File")
+        uploaded_csv = st.file_uploader("Upload CSV file containing students data", type=["csv"])
+        
+        if uploaded_csv is not None:
+            try:
+                import_df = pd.read_csv(uploaded_csv)
+                st.write("Preview of uploaded data:", import_df.head())
+                
+                if st.button("🚀 Confirm & Import Students", type="primary"):
+                    current_students = fetch_students()
+                    success_count = 0
+                    for _, row in import_df.iterrows():
+                        name_val = str(row.get("name", "")).strip()
+                        father_val = str(row.get("father_name", "")).strip()
+                        if not name_val or name_val.lower() == "nan":
+                            continue
+                        
+                        class_val = str(row.get("class_name", "Class 1")).strip()
+                        m_fee_val = int(row.get("monthly_fee", 3500) or 3500)
+                        y_fee_val = int(row.get("yearly_fee", 5000) or 5000)
+                        
+                        # Generate unique ID for each imported student
+                        new_id = next_student_id(current_students)
+                        # Add locally to list so next_student_id updates correctly in loop
+                        current_students.append({"id": new_id})
+                        
+                        sb.table("students").insert({
+                            "id": new_id,
+                            "name": name_val,
+                            "father_name": father_val,
+                            "class_name": class_val,
+                            "monthly_fee": m_fee_val,
+                            "yearly_fee": y_fee_val
+                        }).execute()
+                        success_count += 1
+                        
+                    st.success(f"Successfully imported {success_count} students!")
+                    st.rerun()
+            except Exception as e:
+                st.error(f"Error parsing CSV file: {e}")
 
     st.divider()
     
@@ -734,7 +818,6 @@ elif menu_choice == "💳 Fee Management":
         pend_monthly = sum(1 for s in processed_fee_list if s['monthly_status'] == 'Pending')
         pend_amt = sum(s['monthly_fee'] for s in processed_fee_list if s['monthly_status'] == 'Pending')
         
-        # Calculate Total Collection for this selected billing month across filtered students
         all_fee_recs = fetch_all_fee_records()
         filtered_student_ids = [s["id"] for s in fee_target_students]
         total_collected = sum(int(r.get("amount") or 0) for r in all_fee_recs if r.get("student_id") in filtered_student_ids and r.get("month_year") == fee_month_input)
@@ -796,7 +879,6 @@ elif menu_choice == "💳 Fee Management":
         rep_mode = st.radio("Report Type:", ["Daily Collection (Calendar Date)", "Monthly Collection (e.g., August 2026)"], horizontal=True)
 
         all_records = fetch_all_fee_records()
-        # Create student lookup for names
         std_name_map = {s["id"]: s["name"] for s in students}
 
         formatted_records = []
@@ -806,7 +888,7 @@ elif menu_choice == "💳 Fee Management":
                 "student_id": s_id,
                 "student_name": std_name_map.get(s_id, "Unknown"),
                 "month_year": r.get("month_year"),
-                "paid_date": r.get("paid_date"), # Format YYYY-MM-DD
+                "paid_date": r.get("paid_date"),
                 "amount": r.get("amount") or 0
             })
 
@@ -837,12 +919,9 @@ elif menu_choice == "💳 Fee Management":
         else:
             col_m_input = st.text_input("Enter Month & Year for Collection Report", value=current_month_str)
             
-            # Filter where paid_date month/year matches or month_year matches
             filtered_recs = []
             for r in formatted_records:
                 p_date = str(r.get("paid_date") or "")
-                # We can check if payment date falls in the selected month name or if month_year matches
-                # Let's check if month_year matches or if paid_date matches the month name
                 if col_m_input.lower() in (r.get("month_year") or "").lower() or col_m_input.lower() in p_date.lower():
                     filtered_recs.append(r)
 
