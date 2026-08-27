@@ -290,7 +290,7 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
     pdf.set_font("Arial", "B", 9)
     pdf.set_fill_color(230, 230, 250)
     
-    # Perfect column widths totaling 277mm (A4 landscape usable width)
+    # Column widths totaling 277mm (A4 landscape usable width)
     pdf.cell(20, 8, "Roll No", 1, 0, "C", True)
     pdf.cell(30, 8, "Class", 1, 0, "C", True)
     pdf.cell(42, 8, "Student Name", 1, 0, "C", True)
@@ -322,7 +322,19 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
         pdf.cell(42, 7, s.get("father_name", ""), 1, 0, "L")
         pdf.cell(24, 7, f"Rs. {m_fee:,}", 1, 0, "R")
         pdf.cell(24, 7, f"Rs. {y_fee:,}", 1, 0, "R")
+        
+        # Status column with conditional coloring (Red for Pending, Green for Paid)
+        if m_stat == "Paid" and y_stat == "Paid":
+            pdf.set_text_color(0, 128, 0) # Green
+        elif m_stat == "Pending" and y_stat == "Pending":
+            pdf.set_text_color(200, 0, 0) # Red
+        else:
+            pdf.set_text_color(200, 100, 0) # Orange for partial
+            
         pdf.cell(25, 7, status_str, 1, 0, "C")
+        
+        # Reset text color to black for remarks and next rows
+        pdf.set_text_color(0, 0, 0)
         pdf.cell(70, 7, remarks_str, 1, 0, "L")
         pdf.ln()
 
