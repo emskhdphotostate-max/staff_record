@@ -17,23 +17,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Professional Dashboard Theme (Matching your reference image)
-PRIMARY_PURPLE = "#3F2B96"
-DARK_PURPLE = "#1A103C"
-SIDEBAR_BG = "#2B1A63"
-LIGHT_BG = "#F4F5F8"
-
-st.markdown(f"""
+# Custom CSS for Professional Dashboard Theme
+st.markdown("""
 <style>
-    .stApp {{ background-color: {LIGHT_BG}; }}
-    .block-container {{ padding-top: 1.5rem !important; }}
+    .stApp { background-color: #F4F5F8; }
+    .block-container { padding-top: 1.5rem !important; }
     
     /* Sidebar Styling */
-    section[data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, {SIDEBAR_BG} 0%, {DARK_PURPLE} 100%);
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #2B1A63 0%, #1A103C 100%);
         color: white;
     }
-    section[data-testid="stSidebar"] .stButton>button {{
+    section[data-testid="stSidebar"] .stButton>button {
         width: 100%;
         background: rgba(255, 255, 255, 0.08);
         color: white;
@@ -43,46 +38,46 @@ st.markdown(f"""
         font-weight: 500;
         margin-bottom: 4px;
         transition: all 0.3s ease;
-    }}
-    section[data-testid="stSidebar"] .stButton>button:hover {{
-        background: {PRIMARY_PURPLE};
+    }
+    section[data-testid="stSidebar"] .stButton>button:hover {
+        background: #3F2B96;
         border-color: #ffffff;
-    }}
+    }
 
     /* Top Banner Header */
-    .dashboard-header {{
-        background: linear-gradient(135deg, {PRIMARY_PURPLE} 0%, {DARK_PURPLE} 100%);
+    .dashboard-header {
+        background: linear-gradient(135deg, #3F2B96 0%, #1A103C 100%);
         padding: 22px 30px;
         border-radius: 10px;
         color: white;
         margin-bottom: 25px;
         box-shadow: 0 4px 15px rgba(63, 43, 150, 0.2);
-    }}
-    .dashboard-header h1 {{
+    }
+    .dashboard-header h1 {
         margin: 0;
         font-size: 26px !important;
         font-weight: 800;
         letter-spacing: 0.5px;
-    }}
+    }
 
     /* Cards & Containers */
-    div[data-testid="stForm"] {{
+    div[data-testid="stForm"] {
         border: 1px solid #E0D8F0;
         border-radius: 10px;
         padding: 20px;
         background: white;
         box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-    }}
+    }
     
-    .ems-badge {{
+    .ems-badge {
         display: inline-block;
-        background: {DARK_PURPLE};
+        background: #1A103C;
         color: #E7D6F7;
         border-radius: 15px;
         padding: 2px 10px;
         font-size: 11px;
         font-weight: 700;
-    }}
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -354,7 +349,7 @@ campuses = fetch_campuses()
 custom_fields = fetch_custom_fields()
 
 # ------------------------------------------------------------------
-# SIDEBAR NAVIGATION MENU (Like Reference Dashboard)
+# SIDEBAR NAVIGATION MENU
 # ------------------------------------------------------------------
 with st.sidebar:
     logo_path = get_logo_path()
@@ -369,7 +364,6 @@ with st.sidebar:
 
     st.markdown("<p style='color: #D4C5F9; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Main Navigation</p>", unsafe_allow_html=True)
     
-    # Session state for navigation
     if "selected_menu" not in st.session_state:
         st.session_state["selected_menu"] = "📊 Dashboard Overview"
 
