@@ -69,7 +69,7 @@ def check_password():
         with col2:
             st.markdown(
                 """
-                <div style="background: linear-gradient(135deg, #4b134f, #2c3e50); padding: 35px; border-radius: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); text-align: center; color: white; margin-top: 30px;">
+                <div style="background: linear-gradient(135deg, #4B1E82, #17091F); padding: 35px; border-radius: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.2); text-align: center; color: white; margin-top: 30px;">
                 """,
                 unsafe_allow_html=True
             )
@@ -83,8 +83,8 @@ def check_password():
                 
             st.markdown(
                 """
-                    <h1 style="margin: 15px 0 5px 0; font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: 1px;">EXCELLENCE MODEL SCHOOL</h1>
-                    <p style="margin: 0; font-size: 14px; font-weight: 400; color: #dcdde1; letter-spacing: 0.5px;">Staff Record Book — Secure Login</p>
+                    <h1 style="margin: 15px 0 5px 0; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: 1px;">EXCELLENCE MODEL SCHOOL</h1>
+                    <p style="margin: 0; font-size: 13px; font-weight: 400; color: #E7D6F7; letter-spacing: 0.5px;">Staff Record Book — Secure Login</p>
                 </div>
                 """,
                 unsafe_allow_html=True
