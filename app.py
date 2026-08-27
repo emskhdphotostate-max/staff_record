@@ -1,5 +1,30 @@
 import streamlit as st
 
+# Yeh line page ko wide layout par set kar degi aur uper ki space khatam kar degi
+st.set_page_config(
+    page_title="Staff Record Book",
+    page_icon="📚",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+st.markdown(
+    """
+    <style>
+        .block-container {
+            padding-top: 1rem !important; /* Uper ki extra space ko kam kar dega */
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+
+
+
+import streamlit as st
+
 def check_password():
     def password_entered():
         if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
