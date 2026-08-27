@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for styling and removing top gaps
+# Custom CSS for styling and fixing top gap issue
 PURPLE = "#4B1E82"
 PURPLE_DEEP = "#17091F"
 PURPLE_LIGHT = "#7A2FC2"
@@ -22,7 +22,8 @@ CREAM = "#F5F4F7"
 st.markdown(f"""
 <style>
     .stApp {{ background-color: {CREAM}; }}
-    .block-container {{ padding-top: 1rem !important; }}
+    /* Yahan padding-top ko barha diya hai taake upar se kuch bhi cut na ho */
+    .block-container {{ padding-top: 2.5rem !important; }}
     .ems-header {{
         background: linear-gradient(115deg, {PURPLE} 0%, {PURPLE_DEEP} 100%);
         padding: 22px 28px; border-radius: 10px; margin-bottom: 18px; color: white;
