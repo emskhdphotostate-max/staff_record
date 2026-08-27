@@ -1,4 +1,39 @@
 import streamlit as st
+
+# Check password function
+def check_password():
+    def password_entered():
+        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # don't store password
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # First run, show input for password
+        st.text_input(
+            "Password enter karein app kholne ke liye:", type="password", on_change=password_entered, key="password"
+        )
+        return False
+    elif not st.session_state["password_correct"]:
+        # Password incorrect, show input + error
+        st.text_input(
+            "Password enter karein app kholne ke liye:", type="password", on_change=password_entered, key="password"
+        )
+        st.error("😕 Password ghalat hai, dubara koshish karein")
+        return False
+    else:
+        # Password correct
+        return True
+
+if not check_password():
+    st.stop()  # Iske agay ka app load nahi hoga jab tak password theek na ho
+
+# --- AAPKA ASAL APP CODE YAHAN SE START HOGA ---
+# Jaise aapka Supabase connection aur baqi UI code hai
+
+
+import streamlit as st
 from supabase import create_client, Client
 import re
 
