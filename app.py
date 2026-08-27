@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client, Client
 import re
 from fpdf import FPDF
+import os
 
 # ------------------------------------------------------------------
 # Page setup (Ek hi dafa top par config aur wide layout)
@@ -13,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for styling and fixing top gap issue
+# Custom CSS for styling, bigger titles, and fixing top gaps
 PURPLE = "#4B1E82"
 PURPLE_DEEP = "#17091F"
 PURPLE_LIGHT = "#7A2FC2"
@@ -22,15 +23,18 @@ CREAM = "#F5F4F7"
 st.markdown(f"""
 <style>
     .stApp {{ background-color: {CREAM}; }}
-    /* Yahan padding-top ko barha diya hai taake upar se kuch bhi cut na ho */
-    .block-container {{ padding-top: 2.5rem !important; }}
+    .block-container {{ padding-top: 2rem !important; }}
+    
+    /* Big Header Styling */
     .ems-header {{
         background: linear-gradient(115deg, {PURPLE} 0%, {PURPLE_DEEP} 100%);
-        padding: 22px 28px; border-radius: 10px; margin-bottom: 18px; color: white;
+        padding: 30px 35px; border-radius: 12px; margin-bottom: 20px; color: white;
+        box-shadow: 0 6px 20px rgba(75, 30, 130, 0.2);
     }}
-    .ems-header .eyebrow {{ font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
-        color: #E7D6F7; margin: 0 0 4px 0; font-weight: 600; }}
-    .ems-header h1 {{ margin: 0; font-size: 26px; color: #FBF8F0; }}
+    .ems-header .eyebrow {{ font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+        color: #E7D6F7; margin: 0 0 6px 0; font-weight: 700; }}
+    .ems-header h1 {{ margin: 0; font-size: 34px !important; font-weight: 800; color: #FFFFFF; letter-spacing: 0.5px; }}
+    
     .ems-badge {{
         display: inline-block; background: {PURPLE_DEEP}; color: #E7D6F7;
         border: 1px solid {PURPLE_LIGHT}; border-radius: 20px; padding: 2px 10px;
@@ -58,9 +62,21 @@ def check_password():
         with col2:
             st.markdown(
                 """
-                <div style="background: linear-gradient(135deg, #4b134f, #2c3e50); padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; color: white; margin-top: 50px;">
-                    <h2 style="margin-bottom: 10px; font-family: sans-serif;">EXCELLENCE MODEL SCHOOL</h2>
-                    <h4 style="margin-top: 0; font-weight: 350; color: #dcdde1;">Staff Record Book - Secure Login</h4>
+                <div style="background: linear-gradient(135deg, #4b134f, #2c3e50); padding: 35px; border-radius: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); text-align: center; color: white; margin-top: 30px;">
+                """,
+                unsafe_allow_html=True
+            )
+            
+            # Show Logo on Login if available
+            if os.path.exists("logo.png"):
+                st.image("logo.png", width=120)
+            else:
+                st.markdown("<div style='font-size: 45px; margin-bottom: 10px;'>🎓</div>", unsafe_allow_html=True)
+                
+            st.markdown(
+                """
+                    <h1 style="margin: 10px 0 5px 0; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: 1px;">EXCELLENCE MODEL SCHOOL</h1>
+                    <p style="margin: 0; font-size: 14px; font-weight: 400; color: #dcdde1; letter-spacing: 0.5px;">Staff Record Book — Secure Login</p>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -200,16 +216,26 @@ designations = fetch_designations()
 campuses = fetch_campuses()
 custom_fields = fetch_custom_fields()
 
-col_head, col_refresh = st.columns([6, 1])
+# Main Header with Logo and Big School Title
+col_logo, col_head, col_refresh = st.columns([1, 6, 1])
+
+with col_logo:
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=95)
+    else:
+        st.markdown("<div style='font-size: 50px; text-align: center;'>🎓</div>", unsafe_allow_html=True)
+
 with col_head:
     st.markdown(f"""
     <div class="ems-header">
         <p class="eyebrow">Excellence Model School</p>
         <h1>Staff Record Book</h1>
-        <p style="margin:6px 0 0 0; color:#E7D6F7; font-size:13px;">{len(staff)} record(s) on file — live from Supabase</p>
+        <p style="margin:6px 0 0 0; color:#E7D6F7; font-size:14px; font-weight: 500;">{len(staff)} record(s) on file — live from Supabase</p>
     </div>
     """, unsafe_allow_html=True)
+
 with col_refresh:
+    st.write("")
     st.write("")
     if st.button("🔄 Refresh", use_container_width=True):
         st.rerun()
