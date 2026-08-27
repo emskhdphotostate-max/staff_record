@@ -400,8 +400,9 @@ custom_fields = fetch_custom_fields()
 # ------------------------------------------------------------------
 with st.sidebar:
     logo_path = get_logo_path()
-    if logo_path:
-        st.image(logo_path, width=85)
+    logo_base64 = get_image_base64(logo_path)
+    if logo_base64:
+        st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{logo_base64}" width="85" style="margin: 0 auto; display: block;" /></div>', unsafe_allow_html=True)
     else:
         st.markdown("<div style='font-size: 38px; text-align: center;'>🎓</div>", unsafe_allow_html=True)
     
