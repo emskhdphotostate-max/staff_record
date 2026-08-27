@@ -323,17 +323,23 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
         pdf.cell(24, 7, f"Rs. {m_fee:,}", 1, 0, "R")
         pdf.cell(24, 7, f"Rs. {y_fee:,}", 1, 0, "R")
         
-        # Status column with conditional coloring (Red for Pending, Green for Paid)
+        # Status Cell Conditional Coloring (Red background + White text if Pending)
+        fill_status = False
         if m_stat == "Paid" and y_stat == "Paid":
-            pdf.set_text_color(0, 128, 0) # Green
+            pdf.set_text_color(0, 128, 0) # Green text for fully paid
+            fill_status = False
         elif m_stat == "Pending" and y_stat == "Pending":
-            pdf.set_text_color(200, 0, 0) # Red
+            pdf.set_fill_color(220, 53, 69)  # Red background
+            pdf.set_text_color(255, 255, 255) # White text
+            fill_status = True
         else:
-            pdf.set_text_color(200, 100, 0) # Orange for partial
+            pdf.set_fill_color(255, 193, 7)  # Orange/Yellow background for partial
+            pdf.set_text_color(0, 0, 0)      # Black text
+            fill_status = True
             
-        pdf.cell(25, 7, status_str, 1, 0, "C")
+        pdf.cell(25, 7, status_str, 1, 0, "C", fill=fill_status)
         
-        # Reset text color to black for remarks and next rows
+        # Reset text color and fill for remarks and next rows
         pdf.set_text_color(0, 0, 0)
         pdf.cell(70, 7, remarks_str, 1, 0, "L")
         pdf.ln()
