@@ -5,7 +5,7 @@ from fpdf import FPDF
 import os
 import base64
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, calendar if 'calendar' in globals() else datetime
 
 # ------------------------------------------------------------------
 # Page setup
@@ -132,7 +132,7 @@ DEFAULT_CAMPUSES = [
 ]
 
 # ------------------------------------------------------------------
-# Data Helpers (Staff, Students, Fees)
+# Data Helpers
 # ------------------------------------------------------------------
 def fetch_staff():
     res = sb.table("staff").select("*").order("id").execute()
@@ -190,8 +190,24 @@ def mark_fee_paid(student_id, month_year, amount):
             "amount": amount
         }).execute()
 
+def fetch_attendance(student_id, date_str):
+    res = sb.table("attendance").select("*").eq("student_id", student_id).eq("date", date_str).execute()
+    return res.data[0] if res.data else None
+
+def save_attendance(student_id, date_str, status, month_year):
+    existing = fetch_attendance(student_id, date_str)
+    if existing:
+        sb.table("attendance").update({"status": status}).eq("id", existing["id"]).execute()
+    else:
+        sb.table("attendance").insert({
+            "student_id": student_id,
+            "date": date_str,
+            "status": status,
+            "month_year": month_year
+        }).execute()
+
 # ------------------------------------------------------------------
-# PDF Generation Functions
+# PDF Functions
 # ------------------------------------------------------------------
 def generate_staff_pdf(data_rows, custom_fields_list):
     pdf = FPDF()
@@ -265,12 +281,13 @@ with col_refresh:
         st.rerun()
 
 # ------------------------------------------------------------------
-# TABS SETUP
+# TABS SETUP (Added Attendance Tab)
 # ------------------------------------------------------------------
-tab_staff, tab_students, tab_fee = st.tabs([
+tab_staff, tab_students, tab_fee, tab_attendance = st.tabs([
     "👥 Staff Management", 
     "🎓 Student Admissions", 
-    "💳 Fee Management"
+    "💳 Fee Management",
+    "📅 Attendance"
 ])
 
 # ==================================================================
@@ -502,3 +519,60 @@ with tab_fee:
                                 sb.table("fee_records").update({"status": "Pending"}).eq("id", rec["id"]).execute()
                                 st.warning(f"Status changed back to Pending for {s_item['name']}.")
                                 st.rerun()
+
+
+# ==================================================================
+# TAB 4: ATTENDANCE SHEET (Monthly Grid)
+# ==================================================================
+with tab_attendance:
+    st.header("📅 Monthly Class Attendance Sheet")
+    st.markdown("Select class and date to mark or check student attendance.")
+
+    at_c1, at_c2, at_c3 = st.columns(3)
+    with at_c1:
+        att_class_sel = st.selectbox("Select Class", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="att_cls")
+    with at_c2:
+        att_month_sel = st.selectbox("Select Month", ["August 2026", "September 2026", "October 2026", "November 2026", "December 2026", "January 2027", "February 2027", "March 2027", "April 2027", "May 2027", "June 2027", "July 2027"])
+    with at_c3:
+        att_date_sel = st.date_input("Select Specific Date", datetime.now())
+
+    st.divider()
+
+    att_students = [s for s in students if s.get("class_name") == att_class_sel]
+    date_str_formatted = att_date_sel.strftime("%Y-%m-%d")
+
+    st.subheader(f"📋 Attendance for {att_class_sel} — Date: {date_str_formatted}")
+
+    if not att_students:
+        st.info(f"No students found in {att_class_sel}.")
+    else:
+        with st.form("attendance_form"):
+            attendance_inputs = {}
+            for st_obj in att_students:
+                existing_att = fetch_attendance(st_obj["id"], date_str_formatted)
+                current_status = existing_att["status"] if existing_att else "Present"
+                
+                col_name, col_radio = st.columns([3, 3])
+                col_name.markdown(f"**{st_obj['name']}** (`{st_obj['id']}`)")
+                
+                status_options = ["Present", "Absent", "Leave"]
+                default_idx = status_options.index(current_status) if current_status in status_options else 0
+                
+                attendance_inputs[st_obj["id"]] = col_radio.radio(
+                    f"Status {st_obj['id']}", 
+                    status_options, 
+                    index=default_idx, 
+                    horizontal=True, 
+                    label_visibility="collapsed",
+                    key=f"att_radio_{st_obj['id']}"
+                )
+                st.write("")
+
+            submit_attendance = st.form_submit_button("💾 Save Attendance", type="primary")
+            if submit_attendance:
+                try:
+                    for st_id, stat in attendance_inputs.items():
+                        save_attendance(st_id, date_str_formatted, stat, att_month_sel)
+                    st.success(f"Attendance successfully saved for {date_str_formatted}!")
+                except Exception as e:
+                    st.error(f"Error saving attendance: {e}")
