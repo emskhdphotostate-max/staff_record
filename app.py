@@ -8,7 +8,7 @@ import pandas as pd
 from datetime import datetime
 
 # ------------------------------------------------------------------
-# Page setup (Ek hi dafa top par config aur wide layout)
+# Page setup
 # ------------------------------------------------------------------
 st.set_page_config(
     page_title="Excellence Model School — Management System",
@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for styling, bigger titles, and fixing top gaps
+# Custom CSS for styling
 PURPLE = "#4B1E82"
 PURPLE_DEEP = "#17091F"
 PURPLE_LIGHT = "#7A2FC2"
@@ -28,7 +28,6 @@ st.markdown(f"""
     .stApp {{ background-color: {CREAM}; }}
     .block-container {{ padding-top: 2rem !important; }}
     
-    /* Big Header Styling */
     .ems-header {{
         background: linear-gradient(115deg, {PURPLE} 0%, {PURPLE_DEEP} 100%);
         padding: 30px 35px; border-radius: 12px; margin-bottom: 20px; color: white;
@@ -47,14 +46,12 @@ st.markdown(f"""
     .stButton>button {{ border-radius: 7px; font-weight: 600; }}
     .stButton>button[kind="primary"] {{ background-color: {PURPLE}; border-color: {PURPLE}; }}
 
-    /* Make password label dark, bold and fully visible */
     div[data-testid="stTextInput"] label p {{
         color: #2C1E4A !important;
         font-weight: 700 !important;
         font-size: 15px !important;
     }}
 
-    /* Make the password input box border clearly visible */
     div[data-testid="stTextInput"] div[data-baseweb="input"] {{
         border: 2px solid {PURPLE_LIGHT} !important;
         border-radius: 8px !important;
@@ -64,7 +61,6 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# Helper to find logo file case-insensitively
 def get_logo_path():
     for filename in ["LOGO.png", "logo.png", "Logo.png"]:
         if os.path.exists(filename):
@@ -78,7 +74,7 @@ def get_image_base64(path):
     return None
 
 # ------------------------------------------------------------------
-# Secure Password Gate (Using st.secrets["APP_PASSWORD"])
+# Secure Password Gate
 # ------------------------------------------------------------------
 def check_password():
     def password_entered():
@@ -93,7 +89,6 @@ def check_password():
         with col2:
             logo_path = get_logo_path()
             logo_base64 = get_image_base64(logo_path)
-            
             logo_html = f'<img src="data:image/png;base64,{logo_base64}" width="120" style="margin-bottom: 10px;" />' if logo_base64 else '<div style="font-size: 45px; margin-bottom: 10px;">🎓</div>'
             
             st.markdown(
@@ -107,12 +102,7 @@ def check_password():
                 unsafe_allow_html=True
             )
             st.write("")
-            st.text_input(
-                "🔐 Enter Password to Access:", 
-                type="password", 
-                on_change=password_entered, 
-                key="password"
-            )
+            st.text_input("🔐 Enter Password to Access:", type="password", on_change=password_entered, key="password")
             if "password_correct" in st.session_state and not st.session_state["password_correct"]:
                 st.error("😕 Incorrect password, please try again!")
         return False
@@ -134,8 +124,7 @@ sb = get_client()
 DEFAULT_DESIGNATIONS = [
     'Principal', 'Vice Principal', 'Head Mistress', 'Coordinator', 'Incharge',
     'Class Teacher', 'Subject Teacher', 'Computer Operator', 'Accountant',
-    'Admin Staff', 'Librarian', 'Lab Assistant', 'Gate Keeper', 'Security Guard',
-    'Maid', 'Peon',
+    'Admin Staff', 'Librarian', 'Lab Assistant', 'Gate Keeper', 'Security Guard', 'Maid', 'Peon',
 ]
 DEFAULT_CAMPUSES = [
     'Kharadar Campus', 'Tower Campus', 'Sonia Arcade Campus', 'Moosa Lane Campus',
@@ -143,7 +132,7 @@ DEFAULT_CAMPUSES = [
 ]
 
 # ------------------------------------------------------------------
-# Data access helpers (Staff)
+# Data Helpers (Staff, Students, Fees)
 # ------------------------------------------------------------------
 def fetch_staff():
     res = sb.table("staff").select("*").order("id").execute()
@@ -164,46 +153,47 @@ def fetch_custom_fields():
     return res.data or []
 
 def next_staff_id(staff):
-    nums = []
-    for s in staff:
-        m = re.search(r"(\d+)", s.get("id", ""))
-        if m:
-            nums.append(int(m.group(1)))
+    nums = [int(re.search(r"(\d+)", s.get("id", "")).group(1)) for s in staff if re.search(r"(\d+)", s.get("id", ""))]
     n = (max(nums) + 1) if nums else 1
     return f"EMS-{n:03d}"
 
-def add_staff(record):
-    sb.table("staff").insert(record).execute()
+def next_student_id(students):
+    nums = [int(re.search(r"(\d+)", s.get("id", "")).group(1)) for s in students if re.search(r"(\d+)", s.get("id", ""))]
+    n = (max(nums) + 1) if nums else 1
+    return f"STD-{n:03d}"
 
-def update_staff(staff_id, record):
-    sb.table("staff").update(record).eq("id", staff_id).execute()
+def fetch_students():
+    res = sb.table("students").select("*").order("id").execute()
+    return res.data or []
 
-def delete_staff(staff_id):
-    sb.table("staff").delete().eq("id", staff_id).execute()
+def add_student(record):
+    sb.table("students").insert(record).execute()
 
-def add_designation(label):
-    sb.table("designations").upsert({"label": label}).execute()
+def delete_student(std_id):
+    sb.table("students").delete().eq("id", std_id).execute()
 
-def remove_designation(label):
-    sb.table("designations").delete().eq("label", label).execute()
+def fetch_fee_record(student_id, month_year):
+    res = sb.table("fee_records").select("*").eq("student_id", student_id).eq("month_year", month_year).execute()
+    return res.data[0] if res.data else None
 
-def add_campus(label):
-    sb.table("campuses").upsert({"label": label}).execute()
-
-def remove_campus(label):
-    sb.table("campuses").delete().eq("label", label).execute()
-
-def add_custom_field(label):
-    fid = "f_" + re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
-    sb.table("custom_fields").upsert({"id": fid, "label": label}).execute()
-
-def remove_custom_field(fid):
-    sb.table("custom_fields").delete().eq("id", fid).execute()
+def mark_fee_paid(student_id, month_year, amount):
+    existing = fetch_fee_record(student_id, month_year)
+    today = datetime.now().strftime("%Y-%m-%d")
+    if existing:
+        sb.table("fee_records").update({"status": "Paid", "paid_date": today}).eq("id", existing["id"]).execute()
+    else:
+        sb.table("fee_records").insert({
+            "student_id": student_id,
+            "month_year": month_year,
+            "status": "Paid",
+            "paid_date": today,
+            "amount": amount
+        }).execute()
 
 # ------------------------------------------------------------------
-# PDF Generation Function (Staff)
+# PDF Generation Functions
 # ------------------------------------------------------------------
-def generate_pdf(data_rows, custom_fields_list):
+def generate_staff_pdf(data_rows, custom_fields_list):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
@@ -216,32 +206,40 @@ def generate_pdf(data_rows, custom_fields_list):
         pdf.set_font("Arial", "B", 11)
         pdf.set_fill_color(230, 230, 250)
         pdf.cell(0, 8, f"ID: {s.get('id')} | Name: {s.get('name')}", 0, 1, "L", True)
-        
         pdf.set_font("Arial", "", 10)
         pdf.cell(0, 6, f"Designation: {s.get('designation')}  |  Campus: {s.get('campus', '—')}", 0, 1, "L")
         pdf.cell(0, 6, f"Father Name: {s.get('father_name', '—')}  |  Class Teacher: {s.get('class_teacher_of', '—')}", 0, 1, "L")
-        pdf.cell(0, 6, f"Subject Teacher: {s.get('subject_teacher', '—')}", 0, 1, "L")
-        
-        if custom_fields_list:
-            extras = []
-            for f in custom_fields_list:
-                val = s.get('custom', {}).get(f['id'], '—')
-                extras.append(f"{f['label']}: {val}")
-            pdf.cell(0, 6, " | ".join(extras), 0, 1, "L")
-        
         pdf.ln(3)
-    
+    return pdf.output(dest='S').encode('latin1')
+
+def generate_student_pdf(data_rows):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Excellence Model School - Student Directory", 0, 1, "C")
+    pdf.set_font("Arial", "", 10)
+    pdf.cell(0, 8, f"Total Students: {len(data_rows)}", 0, 1, "C")
+    pdf.ln(5)
+
+    for s in data_rows:
+        pdf.set_font("Arial", "B", 11)
+        pdf.set_fill_color(240, 230, 250)
+        pdf.cell(0, 8, f"Roll No: {s.get('id')} | Name: {s.get('name')}", 0, 1, "L", True)
+        pdf.set_font("Arial", "", 10)
+        pdf.cell(0, 6, f"Father Name: {s.get('father_name')}  |  Class: {s.get('class_name')}", 0, 1, "L")
+        pdf.cell(0, 6, f"Monthly Fee: Rs. {s.get('monthly_fee', 0):,}", 0, 1, "L")
+        pdf.ln(3)
     return pdf.output(dest='S').encode('latin1')
 
 # ------------------------------------------------------------------
-# Header & Refresh Data Fetches
+# Data Fetches & Header
 # ------------------------------------------------------------------
 staff = fetch_staff()
+students = fetch_students()
 designations = fetch_designations()
 campuses = fetch_campuses()
 custom_fields = fetch_custom_fields()
 
-# Main Header with Logo and Big School Title
 col_logo, col_head, col_refresh = st.columns([1, 6, 1])
 
 with col_logo:
@@ -267,7 +265,7 @@ with col_refresh:
         st.rerun()
 
 # ------------------------------------------------------------------
-# MAIN NAVIGATION TABS (Staff, Students, Fee)
+# TABS SETUP
 # ------------------------------------------------------------------
 tab_staff, tab_students, tab_fee = st.tabs([
     "👥 Staff Management", 
@@ -276,86 +274,31 @@ tab_staff, tab_students, tab_fee = st.tabs([
 ])
 
 # ==================================================================
-# TAB 1: STAFF MANAGEMENT (Your Original 100% Intact Code)
+# TAB 1: STAFF MANAGEMENT
 # ==================================================================
 with tab_staff:
-    # Sidebar — filters + list management + logout (Specific to Staff or general)
     with st.sidebar:
         st.subheader("Filter Staff")
         campus_filter = st.selectbox("Campus", ["All Campuses"] + campuses)
         search = st.text_input("Search Staff", placeholder="Name, designation, campus…")
-
-        st.divider()
-        st.subheader("Manage Lists")
-
-        with st.expander("Designations / Categories"):
-            new_desig = st.text_input("Add new designation", key="new_desig")
-            if st.button("Add Designation", key="add_desig_btn"):
-                if new_desig.strip():
-                    add_designation(new_desig.strip())
-                    st.rerun()
-            for d in designations:
-                c1, c2 = st.columns([4, 1])
-                c1.write(d)
-                if c2.button("✕", key=f"del_desig_{d}"):
-                    remove_designation(d)
-                    st.rerun()
-
-        with st.expander("Campuses"):
-            new_campus = st.text_input("Add new campus", key="new_campus")
-            if st.button("Add Campus", key="add_campus_btn"):
-                if new_campus.strip():
-                    add_campus(new_campus.strip())
-                    st.rerun()
-            for c in campuses:
-                c1, c2 = st.columns([4, 1])
-                c1.write(c)
-                if c2.button("✕", key=f"del_campus_{c}"):
-                    remove_campus(c)
-                    st.rerun()
-
-        with st.expander("Custom Fields"):
-            new_field = st.text_input("Add new field (e.g. Contact No)", key="new_field")
-            if st.button("Add Field", key="add_field_btn"):
-                if new_field.strip():
-                    add_custom_field(new_field.strip())
-                    st.rerun()
-            for f in custom_fields:
-                c1, c2 = st.columns([4, 1])
-                c1.write(f["label"])
-                if c2.button("✕", key=f"del_field_{f['id']}"):
-                    remove_custom_field(f["id"])
-                    st.rerun()
-
         st.divider()
         if st.button("🔒 Logout", use_container_width=True):
             st.session_state["password_correct"] = False
             st.rerun()
 
-    # Analytics / Charts Section
     if staff:
         with st.expander("📊 Staff Analytics & Visual Charts", expanded=False):
             df_staff = pd.DataFrame(staff)
-            
             col_c1, col_c2 = st.columns(2)
-            
             with col_c1:
                 st.markdown("##### 🏫 Staff Count by Campus")
                 if "campus" in df_staff.columns:
-                    campus_counts = df_staff["campus"].fillna("Not Specified").value_counts()
-                    st.bar_chart(campus_counts)
-                else:
-                    st.info("No campus data available.")
-                    
+                    st.bar_chart(df_staff["campus"].fillna("Not Specified").value_counts())
             with col_c2:
                 st.markdown("##### 👩‍🏫 Staff Count by Designation")
                 if "designation" in df_staff.columns:
-                    desig_counts = df_staff["designation"].fillna("Not Specified").value_counts()
-                    st.bar_chart(desig_counts)
-                else:
-                    st.info("No designation data available.")
+                    st.bar_chart(df_staff["designation"].fillna("Not Specified").value_counts())
 
-    # Add staff form
     with st.expander("➕ Add New Staff", expanded=False):
         with st.form("add_staff_form", clear_on_submit=True):
             c1, c2 = st.columns(2)
@@ -366,21 +309,12 @@ with tab_staff:
             class_teacher_of = c1.text_input("Class Teacher Of (if applicable)")
             subject_teacher = c2.text_input("Subject Teacher (if applicable)")
 
-            custom_values = {}
-            if custom_fields:
-                st.write("**Additional Fields**")
-                cols = st.columns(2)
-                for i, f in enumerate(custom_fields):
-                    custom_values[f["id"]] = cols[i % 2].text_input(f["label"], key=f"add_custom_{f['id']}")
-
             submitted = st.form_submit_button("Save Record", type="primary")
             if submitted:
-                if not name.strip():
-                    st.error("Please enter the staff name.")
-                elif not designation:
-                    st.error("Please select a designation.")
+                if not name.strip() or not designation:
+                    st.error("Please enter Name and Designation.")
                 else:
-                    record = {
+                    sb.table("staff").insert({
                         "id": next_staff_id(staff),
                         "name": name.strip(),
                         "father_name": father_name.strip(),
@@ -388,121 +322,32 @@ with tab_staff:
                         "class_teacher_of": class_teacher_of.strip(),
                         "subject_teacher": subject_teacher.strip(),
                         "campus": campus,
-                        "custom": custom_values,
-                    }
-                    add_staff(record)
-                    st.success(f"{name} added.")
+                    }).execute()
+                    st.success(f"{name} added successfully.")
                     st.rerun()
 
-    # Filtered list & PDF Download Button
     rows = staff
     if campus_filter != "All Campuses":
         rows = [s for s in rows if s.get("campus") == campus_filter]
     if search.strip():
         q = search.strip().lower()
-        def matches(s):
-            fields = [s.get("name", ""), s.get("father_name", ""), s.get("designation", ""),
-                      s.get("class_teacher_of", ""), s.get("subject_teacher", ""), s.get("campus", "")]
-            return any(q in (v or "").lower() for v in fields)
-        rows = [s for s in rows if matches(s)]
+        rows = [s for s in rows if any(q in (v or "").lower() for v in [s.get("name"), s.get("designation"), s.get("campus")])]
 
     col_title, col_pdf = st.columns([4, 2])
     with col_title:
         st.subheader(f"Staff Records ({len(rows)})")
     with col_pdf:
         if rows:
-            pdf_data = generate_pdf(rows, custom_fields)
-            st.download_button(
-                label="📄 Download PDF Report",
-                data=pdf_data,
-                file_name="staff_record_report.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
+            st.download_button("📄 Download PDF Report", generate_staff_pdf(rows, custom_fields), "staff_report.pdf", "application/pdf", use_container_width=True)
 
-    if not rows:
-        st.info("No matching staff records. Add one above, or adjust your filters." if staff else
-                "This register is empty. Use '➕ Add New Staff' above to create the first record.")
-    else:
-        for s in rows:
-            with st.container(border=True):
-                c1, c2, c3 = st.columns([3, 5, 1])
-                with c1:
-                    st.markdown(f"**{s['name']}**")
-                    st.caption(s.get("id", ""))
-                with c2:
-                    st.markdown(
-                        f"<span class='ems-badge'>{s.get('designation','')}</span> &nbsp; "
-                        f"👨 Father: {s.get('father_name') or '—'} &nbsp;|&nbsp; "
-                        f"🏫 {s.get('campus') or '—'} &nbsp;|&nbsp; "
-                        f"📘 Class Teacher: {s.get('class_teacher_of') or '—'} &nbsp;|&nbsp; "
-                        f"📗 Subject: {s.get('subject_teacher') or '—'}",
-                        unsafe_allow_html=True,
-                    )
-                    if custom_fields:
-                        extras = [f"{f['label']}: {s.get('custom', {}).get(f['id']) or '—'}" for f in custom_fields]
-                        st.caption(" | ".join(extras))
-                with c3:
-                    edit_key = f"edit_open_{s['id']}"
-                    if st.button("Edit", key=f"edit_btn_{s['id']}", use_container_width=True):
-                        st.session_state[edit_key] = not st.session_state.get(edit_key, False)
-                    if st.button("Delete", key=f"del_btn_{s['id']}", use_container_width=True):
-                        st.session_state[f"confirm_del_{s['id']}"] = True
-
-                if st.session_state.get(f"confirm_del_{s['id']}"):
-                    st.warning(f"Delete {s['name']}'s record permanently?")
-                    cc1, cc2 = st.columns(2)
-                    if cc1.button("Yes, delete", key=f"yes_del_{s['id']}", type="primary"):
-                        delete_staff(s["id"])
-                        st.session_state[f"confirm_del_{s['id']}"] = False
-                        st.rerun()
-                    if cc2.button("Cancel", key=f"no_del_{s['id']}"):
-                        st.session_state[f"confirm_del_{s['id']}"] = False
-                        st.rerun()
-
-                if st.session_state.get(edit_key):
-                    with st.form(f"edit_form_{s['id']}"):
-                        ec1, ec2 = st.columns(2)
-                        e_name = ec1.text_input("Staff Name *", value=s.get("name", ""))
-                        e_father = ec2.text_input("Father Name", value=s.get("father_name", ""))
-                        e_desig_options = [""] + designations
-                        e_desig_index = e_desig_options.index(s.get("designation")) if s.get("designation") in e_desig_options else 0
-                        e_desig = ec1.selectbox("Category / Designation *", e_desig_options, index=e_desig_index, key=f"e_desig_{s['id']}")
-                        e_campus_options = [""] + campuses
-                        e_campus_index = e_campus_options.index(s.get("campus")) if s.get("campus") in e_campus_options else 0
-                        e_campus = ec2.selectbox("Campus", e_campus_options, index=e_campus_index, key=f"e_campus_{s['id']}")
-                        e_class = ec1.text_input("Class Teacher Of", value=s.get("class_teacher_of", ""))
-                        e_subject = ec2.text_input("Subject Teacher", value=s.get("subject_teacher", ""))
-
-                        e_custom = {}
-                        if custom_fields:
-                            cols = st.columns(2)
-                            for i, f in enumerate(custom_fields):
-                                e_custom[f["id"]] = cols[i % 2].text_input(
-                                    f["label"], value=(s.get("custom", {}) or {}).get(f["id"], ""), key=f"e_custom_{s['id']}_{f['id']}"
-                                )
-
-                        save_col, cancel_col = st.columns(2)
-                        if save_col.form_submit_button("Save Changes", type="primary"):
-                            if not e_name.strip():
-                                st.error("Please enter the staff name.")
-                            elif not e_desig:
-                                st.error("Please select a designation.")
-                            else:
-                                update_staff(s["id"], {
-                                    "name": e_name.strip(),
-                                    "father_name": e_father.strip(),
-                                    "designation": e_desig,
-                                    "class_teacher_of": e_class.strip(),
-                                    "subject_teacher": e_subject.strip(),
-                                    "campus": e_campus,
-                                    "custom": e_custom,
-                                })
-                                st.session_state[edit_key] = False
-                                st.rerun()
-                        if cancel_col.form_submit_button("Cancel"):
-                            st.session_state[edit_key] = False
-                            st.rerun()
+    for s in rows:
+        with st.container(border=True):
+            c1, c2, c3 = st.columns([3, 5, 1])
+            c1.markdown(f"**{s['name']}** \n`{s.get('id')}`")
+            c2.markdown(f"<span class='ems-badge'>{s.get('designation','')}</span> | Father: {s.get('father_name','—')} | Campus: {s.get('campus','—')}", unsafe_allow_html=True)
+            if c3.button("Delete", key=f"del_staff_{s['id']}"):
+                sb.table("staff").delete().eq("id", s["id"]).execute()
+                st.rerun()
 
 
 # ==================================================================
@@ -510,7 +355,7 @@ with tab_staff:
 # ==================================================================
 with tab_students:
     st.header("🎓 Student Admissions & Class Records")
-    st.markdown("Register students here. They will automatically sync with the Class-wise lists and Fee Tracker.")
+    st.markdown("Register students here. Data syncs instantly with Supabase database and Class lists.")
     
     with st.form("student_admission_form", clear_on_submit=True):
         st.subheader("New Student Registration")
@@ -529,32 +374,59 @@ with tab_students:
         if submit_std:
             if std_name.strip() and std_father.strip():
                 try:
-                    # Supabase insertion (Ensure table 'students' is created in Supabase)
+                    new_s_id = next_student_id(students)
                     student_data = {
+                        "id": new_s_id,
                         "name": std_name.strip(),
                         "father_name": std_father.strip(),
                         "class_name": std_class,
                         "monthly_fee": std_fee
                     }
-                    # sb.table("students").insert(student_data).execute()
-                    st.success(f"Student {std_name} successfully enrolled in {std_class}!")
+                    add_student(student_data)
+                    st.success(f"Student {std_name} ({new_s_id}) successfully enrolled in {std_class}!")
+                    st.rerun()
                 except Exception as e:
-                    st.error(f"Error registering student: {e}")
+                    st.error(f"Error saving student: {e}")
             else:
                 st.warning("Please fill in Student Name and Father's Name.")
 
     st.divider()
-    st.subheader("🔍 Class-wise Student Directory")
-    view_class = st.selectbox("Select Class to Filter", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="dir_class")
     
-    st.write(f"Showing students enrolled in: **{view_class}**")
+    c_filt1, c_filt2 = st.columns([4, 2])
+    with c_filt1:
+        view_class = st.selectbox("Select Class to View Directory", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="dir_class")
     
-    # Sample view table (Dynamic data will pull from Supabase table once connected)
-    sample_students_df = pd.DataFrame([
-        {"Roll No": "ST-001", "Student Name": "Ali Khan", "Father Name": "Ahmed Khan", "Monthly Fee (Rs.)": 3500},
-        {"Roll No": "ST-002", "Student Name": "Sara Ahmed", "Father Name": "Tariq Ahmed", "Monthly Fee (Rs.)": 3500},
-    ])
-    st.dataframe(sample_students_df, use_container_width=True)
+    class_students = [s for s in students if s.get("class_name") == view_class]
+
+    with c_filt2:
+        st.write("")
+        st.write("")
+        if class_students:
+            st.download_button(
+                "📄 Download Class PDF", 
+                generate_student_pdf(class_students), 
+                f"students_{view_class}.pdf", 
+                "application/pdf", 
+                use_container_width=True
+            )
+
+    st.subheader(f"📋 Enrolled Students in {view_class} ({len(class_students)})")
+    
+    if not class_students:
+        st.info(f"No students found in {view_class}. Use the form above to add students.")
+    else:
+        for st_item in class_students:
+            with st.container(border=True):
+                col_i, col_d, col_btn = st.columns([4, 4, 2])
+                col_i.markdown(f"**{st_item['name']}** (`{st_item['id']}`)")
+                col_i.caption(f"Father: {st_item['father_name']}")
+                
+                col_d.markdown(f"Monthly Fee: **Rs. {st_item.get('monthly_fee', 0):,}**")
+                
+                if col_btn.button("🗑️ Delete", key=f"del_std_{st_item['id']}"):
+                    delete_student(st_item['id'])
+                    st.success("Student removed.")
+                    st.rerun()
 
 
 # ==================================================================
@@ -562,7 +434,7 @@ with tab_students:
 # ==================================================================
 with tab_fee:
     st.header("💳 Monthly Fee Tracker & Dues Clearance")
-    st.markdown("Track monthly fee collections automatically. Mark pending dues as paid with a single click.")
+    st.markdown("Track monthly fee status. Clicking 'Collect Fee' updates Supabase instantly.")
     
     current_month_str = datetime.now().strftime("%B %Y")
     
@@ -574,17 +446,23 @@ with tab_fee:
         
     st.divider()
     
-    # Mock / Live data state for fee tracker demo
-    fee_records_list = [
-        {"id": "ST-001", "name": "Ali Khan", "monthly_fee": 3500, "status": "Pending"},
-        {"id": "ST-002", "name": "Sara Ahmed", "monthly_fee": 3500, "status": "Paid"},
-    ]
+    fee_target_students = [s for s in students if s.get("class_name") == fee_class_sel]
     
-    # Top Live Metrics Cards
-    tot_s = len(fee_records_list)
-    paid_s = sum(1 for s in fee_records_list if s['status'] == 'Paid')
-    pend_s = sum(1 for s in fee_records_list if s['status'] == 'Pending')
-    pend_amt = sum(s['monthly_fee'] for s in fee_records_list if s['status'] == 'Pending')
+    processed_fee_list = []
+    for s_obj in fee_target_students:
+        rec = fetch_fee_record(s_obj["id"], fee_month_input)
+        status = rec["status"] if rec else "Pending"
+        processed_fee_list.append({
+            "id": s_obj["id"],
+            "name": s_obj["name"],
+            "monthly_fee": s_obj.get("monthly_fee", 0),
+            "status": status
+        })
+    
+    tot_s = len(processed_fee_list)
+    paid_s = sum(1 for s in processed_fee_list if s['status'] == 'Paid')
+    pend_s = sum(1 for s in processed_fee_list if s['status'] == 'Pending')
+    pend_amt = sum(s['monthly_fee'] for s in processed_fee_list if s['status'] == 'Pending')
     
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Total Students", tot_s)
@@ -594,25 +472,33 @@ with tab_fee:
     
     st.subheader(f"📋 Fee Status Ledger — {fee_class_sel} ({fee_month_input})")
     
-    for s_item in fee_records_list:
-        with st.container(border=True):
-            col_info, col_status, col_action = st.columns([4, 2, 2])
-            
-            with col_info:
-                st.markdown(f"**{s_item['name']}** (`{s_item['id']}`)")
-                st.caption(f"Monthly Fee Due: Rs. {s_item['monthly_fee']:,}")
+    if not processed_fee_list:
+        st.info(f"No students enrolled in {fee_class_sel} yet to generate fee ledger.")
+    else:
+        for s_item in processed_fee_list:
+            with st.container(border=True):
+                col_info, col_status, col_action = st.columns([4, 2, 2])
                 
-            with col_status:
-                if s_item["status"] == "Paid":
-                    st.markdown("🟢 **<span style='color:green;'>PAID / CLEAR</span>**", unsafe_allow_html=True)
-                else:
-                    st.markdown("🔴 **<span style='color:red;'>PENDING</span>**", unsafe_allow_html=True)
+                with col_info:
+                    st.markdown(f"**{s_item['name']}** (`{s_item['id']}`)")
+                    st.caption(f"Monthly Fee Due: Rs. {s_item['monthly_fee']:,}")
                     
-            with col_action:
-                if s_item["status"] == "Pending":
-                    if st.button("✅ Collect Fee", key=f"pay_btn_{s_item['id']}", type="primary"):
-                        # Supabase fee status update trigger goes here
-                        st.success(f"Fee collected successfully for {s_item['name']}!")
-                        st.rerun()
-                else:
-                    st.button("🖨️ Print Receipt", key=f"print_btn_{s_item['id']}")
+                with col_status:
+                    if s_item["status"] == "Paid":
+                        st.markdown("🟢 **<span style='color:green;'>PAID / CLEAR</span>**", unsafe_allow_html=True)
+                    else:
+                        st.markdown("🔴 **<span style='color:red;'>PENDING</span>**", unsafe_allow_html=True)
+                        
+                with col_action:
+                    if s_item["status"] == "Pending":
+                        if st.button("✅ Collect Fee", key=f"pay_btn_{s_item['id']}", type="primary"):
+                            mark_fee_paid(s_item["id"], fee_month_input, s_item["monthly_fee"])
+                            st.success(f"Fee collected successfully for {s_item['name']}!")
+                            st.rerun()
+                    else:
+                        if st.button("↩️ Undo / Make Pending", key=f"undo_btn_{s_item['id']}"):
+                            rec = fetch_fee_record(s_item["id"], fee_month_input)
+                            if rec:
+                                sb.table("fee_records").update({"status": "Pending"}).eq("id", rec["id"]).execute()
+                                st.warning(f"Status changed back to Pending for {s_item['name']}.")
+                                st.rerun()
