@@ -284,6 +284,9 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
     pdf.ln()
 
     pdf.set_font("Arial", "", 9)
+    total_monthly = 0
+    total_yearly = 0
+
     for s in students_list:
         rec = fetch_fee_record(s["id"], target_month)
         status = rec["status"] if rec else "Pending"
@@ -300,6 +303,9 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
         m_fee = int(s.get('monthly_fee') or 3500)
         y_fee = int(s.get('yearly_fee') or 5000)
 
+        total_monthly += m_fee
+        total_yearly += y_fee
+
         pdf.cell(20, 7, s.get("id", ""), 1, 0, "C")
         pdf.cell(35, 7, s.get("class_name", ""), 1, 0, "C")
         pdf.cell(45, 7, s.get("name", ""), 1, 0, "L")
@@ -309,6 +315,15 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
         pdf.cell(26, 7, status, 1, 0, "C")
         pdf.cell(62, 7, remarks_str, 1, 0, "L")
         pdf.ln()
+
+    # Total Summary Row at the bottom
+    pdf.set_font("Arial", "B", 9)
+    pdf.set_fill_color(240, 240, 240)
+    pdf.cell(145, 8, f"Total Students: {len(students_list)}", 1, 0, "L", True)
+    pdf.cell(22, 8, f"Rs. {total_monthly:,}", 1, 0, "R", True)
+    pdf.cell(22, 8, f"Rs. {total_yearly:,}", 1, 0, "R", True)
+    pdf.cell(88, 8, "---", 1, 0, "C", True)
+    pdf.ln()
 
     return pdf.output(dest='S').encode('latin1')
 
@@ -612,6 +627,9 @@ elif menu_choice == "💳 Fee Management":
                 use_container_width=True
             )
         
+    # Search box for Student ID or Name
+    fee_search_query = st.text_input("🔍 Search Student (by ID or Name)", placeholder="Type student name or ID (e.g. STD-001, Shehzad)...")
+
     st.divider()
     
     if fee_class_sel == "All Classes":
@@ -619,6 +637,11 @@ elif menu_choice == "💳 Fee Management":
     else:
         fee_target_students = [s for s in students if s.get("class_name") == fee_class_sel]
     
+    # Filter by search query if provided
+    if fee_search_query.strip():
+        q_fee = fee_search_query.strip().lower()
+        fee_target_students = [s for s in fee_target_students if q_fee in s.get("id", "").lower() or q_fee in s.get("name", "").lower()]
+
     processed_fee_list = []
     for s_obj in fee_target_students:
         rec = fetch_fee_record(s_obj["id"], fee_month_input)
@@ -646,7 +669,7 @@ elif menu_choice == "💳 Fee Management":
     st.subheader(f"📋 Fee Status Ledger — {fee_class_sel} ({fee_month_input})")
     
     if not processed_fee_list:
-        st.info("No students found.")
+        st.info("No students found matching your search.")
     else:
         for s_item in processed_fee_list:
             with st.container(border=True):
