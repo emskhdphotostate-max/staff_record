@@ -44,6 +44,13 @@ st.markdown(f"""
     div[data-testid="stForm"] {{ border: 1px solid #DED4EC; border-radius: 10px; padding: 18px; background: white; }}
     .stButton>button {{ border-radius: 7px; font-weight: 600; }}
     .stButton>button[kind="primary"] {{ background-color: {PURPLE}; border-color: {PURPLE}; }}
+
+    /* Make password label dark, bold and fully visible */
+    div[data-testid="stTextInput"] label p {{
+        color: #2C1E4A !important;
+        font-weight: 700 !important;
+        font-size: 15px !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
