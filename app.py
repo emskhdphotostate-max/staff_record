@@ -236,13 +236,13 @@ def generate_student_pdf(data_rows):
         pdf.ln(3)
     return pdf.output(dest='S').encode('latin1')
 
-def generate_comprehensive_fee_pdf(class_name, target_month, students_list):
+def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font("Arial", "B", 15)
     pdf.cell(0, 8, "Excellence Model School - Comprehensive Fee Ledger Report", 0, 1, "C")
     pdf.set_font("Arial", "B", 11)
-    pdf.cell(0, 6, f"Class: {class_name}   |   Billing Month: {target_month}", 0, 1, "C")
+    pdf.cell(0, 6, f"Selection: {class_title}   |   Billing Month: {target_month}", 0, 1, "C")
     pdf.ln(4)
 
     # Table Header
@@ -250,12 +250,13 @@ def generate_comprehensive_fee_pdf(class_name, target_month, students_list):
     pdf.set_fill_color(230, 230, 250)
     
     pdf.cell(20, 8, "Roll No", 1, 0, "C", True)
+    pdf.cell(35, 8, "Class", 1, 0, "C", True)
     pdf.cell(45, 8, "Student Name", 1, 0, "C", True)
     pdf.cell(45, 8, "Father Name", 1, 0, "C", True)
-    pdf.cell(25, 8, "Monthly Fee", 1, 0, "C", True)
-    pdf.cell(25, 8, "Yearly Fee", 1, 0, "C", True)
-    pdf.cell(30, 8, "Status", 1, 0, "C", True)
-    pdf.cell(87, 8, "Pending Months & Remarks", 1, 0, "C", True)
+    pdf.cell(22, 8, "Monthly Fee", 1, 0, "C", True)
+    pdf.cell(22, 8, "Yearly Fee", 1, 0, "C", True)
+    pdf.cell(26, 8, "Status", 1, 0, "C", True)
+    pdf.cell(62, 8, "Pending Months & Remarks", 1, 0, "C", True)
     pdf.ln()
 
     pdf.set_font("Arial", "", 9)
@@ -263,7 +264,6 @@ def generate_comprehensive_fee_pdf(class_name, target_month, students_list):
         rec = fetch_fee_record(s["id"], target_month)
         status = rec["status"] if rec else "Pending"
         
-        # Fetch all pending records for this student
         all_recs = fetch_fee_records_for_student(s["id"])
         pending_months = [r["month_year"] for r in all_recs if r.get("status") == "Pending"]
         if status == "Pending" and target_month not in pending_months:
@@ -274,12 +274,13 @@ def generate_comprehensive_fee_pdf(class_name, target_month, students_list):
             remarks_str = f"Paid for {target_month}"
 
         pdf.cell(20, 7, s.get("id", ""), 1, 0, "C")
+        pdf.cell(35, 7, s.get("class_name", ""), 1, 0, "C")
         pdf.cell(45, 7, s.get("name", ""), 1, 0, "L")
         pdf.cell(45, 7, s.get("father_name", ""), 1, 0, "L")
-        pdf.cell(25, 7, f"Rs. {s.get('monthly_fee', 0):,}", 1, 0, "R")
-        pdf.cell(25, 7, f"Rs. {s.get('yearly_fee', 0):,}", 1, 0, "R")
-        pdf.cell(30, 7, status, 1, 0, "C")
-        pdf.cell(87, 7, remarks_str, 1, 0, "L")
+        pdf.cell(22, 7, f"Rs. {s.get('monthly_fee', 0):,}", 1, 0, "R")
+        pdf.cell(22, 7, f"Rs. {s.get('yearly_fee', 0):,}", 1, 0, "R")
+        pdf.cell(26, 7, status, 1, 0, "C")
+        pdf.cell(62, 7, remarks_str, 1, 0, "L")
         pdf.ln()
 
     return pdf.output(dest='S').encode('latin1')
@@ -517,32 +518,39 @@ with tab_students:
 # ==================================================================
 with tab_fee:
     st.header("💳 Monthly Fee Tracker & Comprehensive Ledger")
-    st.markdown("Track monthly fee status and generate complete fee reports with pending months and yearly fees.")
+    st.markdown("Track monthly fee status and generate complete fee reports for individual classes or all classes combined.")
     
     current_month_str = datetime.now().strftime("%B %Y")
     
     fc1, fc2, fc3 = st.columns([2, 2, 3])
     with fc1:
-        fee_class_sel = st.selectbox("Select Class", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="fee_cls_sel")
+        fee_class_sel = st.selectbox("Select Class", ["All Classes", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="fee_cls_sel")
     with fc2:
         fee_month_input = st.text_input("Billing Month & Year", value=current_month_str)
     with fc3:
         st.write("")
         st.write("")
-        fee_target_students_pdf = [s for s in students if s.get("class_name") == fee_class_sel]
+        if fee_class_sel == "All Classes":
+            fee_target_students_pdf = students
+        else:
+            fee_target_students_pdf = [s for s in students if s.get("class_name") == fee_class_sel]
+            
         if fee_target_students_pdf:
             comprehensive_pdf_bytes = generate_comprehensive_fee_pdf(fee_class_sel, fee_month_input, fee_target_students_pdf)
             st.download_button(
                 "📄 Download Comprehensive Fee Ledger PDF", 
                 comprehensive_pdf_bytes, 
-                f"Fee_Ledger_{fee_class_sel}_{fee_month_input}.pdf", 
+                f"Fee_Ledger_{fee_class_sel.replace(' ', '_')}_{fee_month_input}.pdf", 
                 "application/pdf", 
                 use_container_width=True
             )
         
     st.divider()
     
-    fee_target_students = [s for s in students if s.get("class_name") == fee_class_sel]
+    if fee_class_sel == "All Classes":
+        fee_target_students = students
+    else:
+        fee_target_students = [s for s in students if s.get("class_name") == fee_class_sel]
     
     processed_fee_list = []
     for s_obj in fee_target_students:
@@ -551,6 +559,7 @@ with tab_fee:
         processed_fee_list.append({
             "id": s_obj["id"],
             "name": s_obj["name"],
+            "class_name": s_obj.get("class_name", "—"),
             "monthly_fee": s_obj.get("monthly_fee", 0),
             "yearly_fee": s_obj.get("yearly_fee", 0),
             "status": status
@@ -570,14 +579,14 @@ with tab_fee:
     st.subheader(f"📋 Fee Status Ledger — {fee_class_sel} ({fee_month_input})")
     
     if not processed_fee_list:
-        st.info(f"No students enrolled in {fee_class_sel} yet to generate fee ledger.")
+        st.info("No students enrolled yet to generate fee ledger.")
     else:
         for s_item in processed_fee_list:
             with st.container(border=True):
                 col_info, col_status, col_action = st.columns([4, 2, 2])
                 
                 with col_info:
-                    st.markdown(f"**{s_item['name']}** (`{s_item['id']}`)")
+                    st.markdown(f"**{s_item['name']}** (`{s_item['id']}`) — *{s_item['class_name']}*")
                     st.caption(f"Monthly: Rs. {s_item['monthly_fee']:,} | Yearly: Rs. {s_item['yearly_fee']:,}")
                     
                 with col_status:
@@ -596,7 +605,7 @@ with tab_fee:
                         if st.button("↩️ Undo / Make Pending", key=f"undo_btn_{s_item['id']}"):
                             rec = fetch_fee_record(s_item["id"], fee_month_input)
                             if rec:
-                                sb.table("fee_records").update({"status": "Pending"}.eq("id", rec["id"]).execute())
+                                sb.table("fee_records").update({"status": "Pending"}).eq("id", rec["id"]).execute()
                                 st.warning(f"Status changed back to Pending for {s_item['name']}.")
                                 st.rerun()
 
