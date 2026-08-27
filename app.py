@@ -170,6 +170,9 @@ def fetch_students():
 def add_student(record):
     sb.table("students").insert(record).execute()
 
+def update_student_fee(std_id, monthly_fee, yearly_fee):
+    sb.table("students").update({"monthly_fee": monthly_fee, "yearly_fee": yearly_fee}).eq("id", std_id).execute()
+
 def delete_student(std_id):
     sb.table("students").delete().eq("id", std_id).execute()
 
@@ -233,8 +236,8 @@ def generate_student_pdf(data_rows):
         pdf.set_font("Arial", "", 10)
         pdf.cell(0, 6, f"Father Name: {s.get('father_name')}  |  Class: {s.get('class_name')}", 0, 1, "L")
         
-        m_fee = int(s.get('monthly_fee') or 0)
-        y_fee = int(s.get('yearly_fee') or 0)
+        m_fee = int(s.get('monthly_fee') or 3500)
+        y_fee = int(s.get('yearly_fee') or 5000)
         pdf.cell(0, 6, f"Monthly Fee: Rs. {m_fee:,}  |  Yearly Fee: Rs. {y_fee:,}", 0, 1, "L")
         pdf.ln(3)
     return pdf.output(dest='S').encode('latin1')
@@ -276,8 +279,8 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
         if status == "Paid":
             remarks_str = f"Paid for {target_month}"
 
-        m_fee = int(s.get('monthly_fee') or 0)
-        y_fee = int(s.get('yearly_fee') or 0)
+        m_fee = int(s.get('monthly_fee') or 3500)
+        y_fee = int(s.get('yearly_fee') or 5000)
 
         pdf.cell(20, 7, s.get("id", ""), 1, 0, "C")
         pdf.cell(35, 7, s.get("class_name", ""), 1, 0, "C")
@@ -484,9 +487,12 @@ with tab_students:
     
     c_filt1, c_filt2 = st.columns([4, 2])
     with c_filt1:
-        view_class = st.selectbox("Select Class to View Directory", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="dir_class")
+        view_class = st.selectbox("Select Class to View Directory", ["All Classes", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="dir_class")
     
-    class_students = [s for s in students if s.get("class_name") == view_class]
+    if view_class == "All Classes":
+        class_students = students
+    else:
+        class_students = [s for s in students if s.get("class_name") == view_class]
 
     with c_filt2:
         st.write("")
@@ -495,7 +501,7 @@ with tab_students:
             st.download_button(
                 "📄 Download Class PDF", 
                 generate_student_pdf(class_students), 
-                f"students_{view_class}.pdf", 
+                f"students_{view_class.replace(' ', '_')}.pdf", 
                 "application/pdf", 
                 use_container_width=True
             )
@@ -508,13 +514,23 @@ with tab_students:
         for st_item in class_students:
             with st.container(border=True):
                 col_i, col_d, col_btn = st.columns([4, 4, 2])
-                col_i.markdown(f"**{st_item['name']}** (`{st_item['id']}`)")
+                col_i.markdown(f"**{st_item['name']}** (`{st_item['id']}`) — *{st_item.get('class_name', '—')}*")
                 col_i.caption(f"Father: {st_item['father_name']}")
                 
-                m_f = int(st_item.get('monthly_fee') or 0)
-                y_f = int(st_item.get('yearly_fee') or 0)
+                m_f = int(st_item.get('monthly_fee') or 3500)
+                y_f = int(st_item.get('yearly_fee') or 5000)
                 col_d.markdown(f"Monthly: **Rs. {m_f:,}** | Yearly: **Rs. {y_f:,}**")
                 
+                # Inline Update / Edit Fee section for students
+                with st.expander("✏️ Update Fees for this Student"):
+                    with st.form(key=f"edit_fee_form_{st_item['id']}"):
+                        new_m = st.number_input("Monthly Fee", value=m_f, key=f"nm_{st_item['id']}")
+                        new_y = st.number_input("Yearly Fee", value=y_f, key=f"ny_{st_item['id']}")
+                        if st.form_submit_button("Update Fee"):
+                            update_student_fee(st_item['id'], new_m, new_y)
+                            st.success("Fee updated successfully!")
+                            st.rerun()
+
                 if col_btn.button("🗑️ Delete", key=f"del_std_{st_item['id']}"):
                     delete_student(st_item['id'])
                     st.success("Student removed.")
@@ -568,8 +584,8 @@ with tab_fee:
             "id": s_obj["id"],
             "name": s_obj["name"],
             "class_name": s_obj.get("class_name", "—"),
-            "monthly_fee": int(s_obj.get("monthly_fee") or 0),
-            "yearly_fee": int(s_obj.get("yearly_fee") or 0),
+            "monthly_fee": int(s_obj.get("monthly_fee") or 3500),
+            "yearly_fee": int(s_obj.get("yearly_fee") or 5000),
             "status": status
         })
     
