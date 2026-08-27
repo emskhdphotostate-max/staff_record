@@ -46,6 +46,13 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
+# Helper to find logo file case-insensitively
+def get_logo_path():
+    for filename in ["LOGO.png", "logo.png", "Logo.png"]:
+        if os.path.exists(filename):
+            return filename
+    return None
+
 # ------------------------------------------------------------------
 # Secure Password Gate (Using st.secrets["APP_PASSWORD"])
 # ------------------------------------------------------------------
@@ -67,15 +74,16 @@ def check_password():
                 unsafe_allow_html=True
             )
             
-            # Show Logo on Login if available
-            if os.path.exists("logo.png"):
-                st.image("logo.png", width=120)
+            # Show Logo on Login
+            logo_path = get_logo_path()
+            if logo_path:
+                st.image(logo_path, width=130)
             else:
                 st.markdown("<div style='font-size: 45px; margin-bottom: 10px;'>🎓</div>", unsafe_allow_html=True)
                 
             st.markdown(
                 """
-                    <h1 style="margin: 10px 0 5px 0; font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: 1px;">EXCELLENCE MODEL SCHOOL</h1>
+                    <h1 style="margin: 15px 0 5px 0; font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: 1px;">EXCELLENCE MODEL SCHOOL</h1>
                     <p style="margin: 0; font-size: 14px; font-weight: 400; color: #dcdde1; letter-spacing: 0.5px;">Staff Record Book — Secure Login</p>
                 </div>
                 """,
@@ -220,8 +228,9 @@ custom_fields = fetch_custom_fields()
 col_logo, col_head, col_refresh = st.columns([1, 6, 1])
 
 with col_logo:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=95)
+    logo_path = get_logo_path()
+    if logo_path:
+        st.image(logo_path, width=95)
     else:
         st.markdown("<div style='font-size: 50px; text-align: center;'>🎓</div>", unsafe_allow_html=True)
 
