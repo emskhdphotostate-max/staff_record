@@ -291,24 +291,23 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
     pdf.set_fill_color(230, 230, 250)
     
     pdf.cell(20, 8, "Roll No", 1, 0, "C", True)
-    pdf.cell(35, 8, "Class", 1, 0, "C", True)
-    pdf.cell(45, 8, "Student Name", 1, 0, "C", True)
-    pdf.cell(45, 8, "Father Name", 1, 0, "C", True)
+    pdf.cell(32, 8, "Class", 1, 0, "C", True)
+    pdf.cell(42, 8, "Student Name", 1, 0, "C", True)
+    pdf.cell(42, 8, "Father Name", 1, 0, "C", True)
     pdf.cell(22, 8, "Monthly Fee", 1, 0, "C", True)
     pdf.cell(22, 8, "Yearly Fee", 1, 0, "C", True)
-    pdf.cell(26, 8, "Status", 1, 0, "C", True)
-    pdf.cell(62, 8, "Pending Months & Remarks", 1, 0, "C", True)
+    pdf.cell(28, 8, "Status", 1, 0, "C", True)
+    pdf.cell(69, 8, "Remarks", 1, 0, "C", True)
     pdf.ln()
 
-    pdf.set_font("Arial", "", 9)
+    pdf.set_font("Arial", "", 8)
     total_monthly = 0
     total_yearly = 0
 
     for s in students_list:
         m_stat, y_stat = get_fee_statuses(s["id"], target_month)
         status_str = f"M: {m_stat} | Y: {y_stat}"
-        
-        remarks_str = f"Monthly: {m_stat}, Yearly: {y_stat}"
+        remarks_str = f"M: {m_stat}, Y: {y_stat}"
 
         m_fee = int(s.get('monthly_fee') or 3500)
         y_fee = int(s.get('yearly_fee') or 5000)
@@ -317,22 +316,22 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
         total_yearly += y_fee
 
         pdf.cell(20, 7, s.get("id", ""), 1, 0, "C")
-        pdf.cell(35, 7, s.get("class_name", ""), 1, 0, "C")
-        pdf.cell(45, 7, s.get("name", ""), 1, 0, "L")
-        pdf.cell(45, 7, s.get("father_name", ""), 1, 0, "L")
+        pdf.cell(32, 7, s.get("class_name", ""), 1, 0, "C")
+        pdf.cell(42, 7, s.get("name", ""), 1, 0, "L")
+        pdf.cell(42, 7, s.get("father_name", ""), 1, 0, "L")
         pdf.cell(22, 7, f"Rs. {m_fee:,}", 1, 0, "R")
         pdf.cell(22, 7, f"Rs. {y_fee:,}", 1, 0, "R")
-        pdf.cell(26, 7, status_str, 1, 0, "C")
-        pdf.cell(62, 7, remarks_str, 1, 0, "L")
+        pdf.cell(28, 7, status_str, 1, 0, "C")
+        pdf.cell(69, 7, remarks_str, 1, 0, "L")
         pdf.ln()
 
     # Total Summary Row at the bottom
     pdf.set_font("Arial", "B", 9)
     pdf.set_fill_color(240, 240, 240)
-    pdf.cell(145, 8, f"Total Students: {len(students_list)}", 1, 0, "L", True)
+    pdf.cell(136, 8, f"Total Students: {len(students_list)}", 1, 0, "L", True)
     pdf.cell(22, 8, f"Rs. {total_monthly:,}", 1, 0, "R", True)
     pdf.cell(22, 8, f"Rs. {total_yearly:,}", 1, 0, "R", True)
-    pdf.cell(88, 8, "---", 1, 0, "C", True)
+    pdf.cell(97, 8, "---", 1, 0, "C", True)
     pdf.ln()
 
     return pdf.output(dest='S').encode('latin1')
