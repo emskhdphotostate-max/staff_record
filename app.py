@@ -250,7 +250,7 @@ with col_refresh:
         st.rerun()
 
 # ------------------------------------------------------------------
-# Sidebar — filters + list management
+# Sidebar — filters + list management + logout
 # ------------------------------------------------------------------
 with st.sidebar:
     st.subheader("Filter")
@@ -298,6 +298,12 @@ with st.sidebar:
             if c2.button("✕", key=f"del_field_{f['id']}"):
                 remove_custom_field(f["id"])
                 st.rerun()
+
+    st.divider()
+    # Logout Button at the bottom of the sidebar
+    if st.button("🔒 Logout", use_container_width=True):
+        st.session_state["password_correct"] = False
+        st.rerun()
 
 # ------------------------------------------------------------------
 # Add staff form
