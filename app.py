@@ -6,7 +6,6 @@ import os
 import base64
 import pandas as pd
 from datetime import datetime
-import calendar
 
 # ------------------------------------------------------------------
 # Page setup
@@ -18,46 +17,71 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for styling
-PURPLE = "#4B1E82"
-PURPLE_DEEP = "#17091F"
-PURPLE_LIGHT = "#7A2FC2"
-CREAM = "#F5F4F7"
+# Custom CSS for Professional Dashboard Theme (Matching your reference image)
+PRIMARY_PURPLE = "#3F2B96"
+DARK_PURPLE = "#1A103C"
+SIDEBAR_BG = "#2B1A63"
+LIGHT_BG = "#F4F5F8"
 
 st.markdown(f"""
 <style>
-    .stApp {{ background-color: {CREAM}; }}
-    .block-container {{ padding-top: 2rem !important; }}
+    .stApp {{ background-color: {LIGHT_BG}; }}
+    .block-container {{ padding-top: 1.5rem !important; }}
     
-    .ems-header {{
-        background: linear-gradient(115deg, {PURPLE} 0%, {PURPLE_DEEP} 100%);
-        padding: 30px 35px; border-radius: 12px; margin-bottom: 20px; color: white;
-        box-shadow: 0 6px 20px rgba(75, 30, 130, 0.2);
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {{
+        background: linear-gradient(180deg, {SIDEBAR_BG} 0%, {DARK_PURPLE} 100%);
+        color: white;
+    }
+    section[data-testid="stSidebar"] .stButton>button {{
+        width: 100%;
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        text-align: left;
+        font-weight: 500;
+        margin-bottom: 4px;
+        transition: all 0.3s ease;
     }}
-    .ems-header .eyebrow {{ font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
-        color: #E7D6F7; margin: 0 0 6px 0; font-weight: 700; }}
-    .ems-header h1 {{ margin: 0; font-size: 34px !important; font-weight: 800; color: #FFFFFF; letter-spacing: 0.5px; }}
+    section[data-testid="stSidebar"] .stButton>button:hover {{
+        background: {PRIMARY_PURPLE};
+        border-color: #ffffff;
+    }}
+
+    /* Top Banner Header */
+    .dashboard-header {{
+        background: linear-gradient(135deg, {PRIMARY_PURPLE} 0%, {DARK_PURPLE} 100%);
+        padding: 22px 30px;
+        border-radius: 10px;
+        color: white;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(63, 43, 150, 0.2);
+    }}
+    .dashboard-header h1 {{
+        margin: 0;
+        font-size: 26px !important;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+    }}
+
+    /* Cards & Containers */
+    div[data-testid="stForm"] {{
+        border: 1px solid #E0D8F0;
+        border-radius: 10px;
+        padding: 20px;
+        background: white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }}
     
     .ems-badge {{
-        display: inline-block; background: {PURPLE_DEEP}; color: #E7D6F7;
-        border: 1px solid {PURPLE_LIGHT}; border-radius: 20px; padding: 2px 10px;
-        font-size: 12px; font-weight: 700;
-    }}
-    div[data-testid="stForm"] {{ border: 1px solid #DED4EC; border-radius: 10px; padding: 18px; background: white; }}
-    .stButton>button {{ border-radius: 7px; font-weight: 600; }}
-    .stButton>button[kind="primary"] {{ background-color: {PURPLE}; border-color: {PURPLE}; }}
-
-    div[data-testid="stTextInput"] label p {{
-        color: #2C1E4A !important;
-        font-weight: 700 !important;
-        font-size: 15px !important;
-    }}
-
-    div[data-testid="stTextInput"] div[data-baseweb="input"] {{
-        border: 2px solid {PURPLE_LIGHT} !important;
-        border-radius: 8px !important;
-        background-color: #ffffff !important;
-        box-shadow: 0 2px 5px rgba(75, 30, 130, 0.1);
+        display: inline-block;
+        background: {DARK_PURPLE};
+        color: #E7D6F7;
+        border-radius: 15px;
+        padding: 2px 10px;
+        font-size: 11px;
+        font-weight: 700;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -90,20 +114,20 @@ def check_password():
         with col2:
             logo_path = get_logo_path()
             logo_base64 = get_image_base64(logo_path)
-            logo_html = f'<img src="data:image/png;base64,{logo_base64}" width="120" style="margin-bottom: 10px;" />' if logo_base64 else '<div style="font-size: 45px; margin-bottom: 10px;">🎓</div>'
+            logo_html = f'<img src="data:image/png;base64,{logo_base64}" width="110" style="margin-bottom: 10px;" />' if logo_base64 else '<div style="font-size: 45px; margin-bottom: 10px;">🎓</div>'
             
             st.markdown(
                 f"""
-                <div style="background: linear-gradient(135deg, #4B1E82, #17091F); padding: 35px; border-radius: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.2); text-align: center; color: white; margin-top: 30px;">
+                <div style="background: linear-gradient(135deg, #3F2B96, #1A103C); padding: 35px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); text-align: center; color: white; margin-top: 30px;">
                     {logo_html}
-                    <h1 style="margin: 15px 0 5px 0; font-size: 24px; font-weight: 800; color: #ffffff !important; letter-spacing: 1px;">EXCELLENCE MODEL SCHOOL</h1>
-                    <p style="margin: 0; font-size: 13px; font-weight: 400; color: #E7D6F7 !important; letter-spacing: 0.5px;">School Management System — Secure Login</p>
+                    <h1 style="margin: 15px 0 5px 0; font-size: 22px; font-weight: 800; color: #ffffff !important;">EXCELLENCE MODEL SCHOOL</h1>
+                    <p style="margin: 0; font-size: 12px; color: #D4C5F9 !important;">Secure Enterprise Portal</p>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
             st.write("")
-            st.text_input("🔐 Enter Password to Access:", type="password", on_change=password_entered, key="password")
+            st.text_input("🔐 Enter System Password:", type="password", on_change=password_entered, key="password")
             if "password_correct" in st.session_state and not st.session_state["password_correct"]:
                 st.error("😕 Incorrect password, please try again!")
         return False
@@ -251,7 +275,6 @@ def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
     pdf.cell(0, 6, f"Selection: {class_title}   |   Billing Month: {target_month}", 0, 1, "C")
     pdf.ln(4)
 
-    # Table Header
     pdf.set_font("Arial", "B", 9)
     pdf.set_fill_color(230, 230, 250)
     
@@ -322,7 +345,7 @@ def generate_monthly_attendance_pdf(class_name, month_year_str, students_list):
     return pdf.output(dest='S').encode('latin1')
 
 # ------------------------------------------------------------------
-# Data Fetches & Header
+# Data Fetches
 # ------------------------------------------------------------------
 staff = fetch_staff()
 students = fetch_students()
@@ -330,78 +353,100 @@ designations = fetch_designations()
 campuses = fetch_campuses()
 custom_fields = fetch_custom_fields()
 
-col_logo, col_head, col_refresh = st.columns([1, 6, 1])
-
-with col_logo:
+# ------------------------------------------------------------------
+# SIDEBAR NAVIGATION MENU (Like Reference Dashboard)
+# ------------------------------------------------------------------
+with st.sidebar:
     logo_path = get_logo_path()
     if logo_path:
-        st.image(logo_path, width=95)
+        st.image(logo_path, width=85)
     else:
-        st.markdown("<div style='font-size: 50px; text-align: center;'>🎓</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 38px; text-align: center;'>🎓</div>", unsafe_allow_html=True)
+    
+    st.markdown("<h3 style='text-align: center; color: white; margin-top: 5px; font-size: 16px;'>EXCELLENCE MODEL SCHOOL</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #D4C5F9; font-size: 11px; margin-bottom: 20px;'>Enterprise Management ERP</p>", unsafe_allow_html=True)
+    st.divider()
 
-with col_head:
-    st.markdown(f"""
-    <div class="ems-header">
-        <p class="eyebrow">Excellence Model School</p>
-        <h1>School Management ERP</h1>
-        <p style="margin:6px 0 0 0; color:#E7D6F7; font-size:14px; font-weight: 500;">Live multi-tab portal connected with Supabase</p>
+    st.markdown("<p style='color: #D4C5F9; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Main Navigation</p>", unsafe_allow_html=True)
+    
+    # Session state for navigation
+    if "selected_menu" not in st.session_state:
+        st.session_state["selected_menu"] = "📊 Dashboard Overview"
+
+    if st.button("📊 Dashboard Overview", use_container_width=True):
+        st.session_state["selected_menu"] = "📊 Dashboard Overview"
+    if st.button("👥 Staff Management", use_container_width=True):
+        st.session_state["selected_menu"] = "👥 Staff Management"
+    if st.button("🎓 Student Admissions", use_container_width=True):
+        st.session_state["selected_menu"] = "🎓 Student Admissions"
+    if st.button("💳 Fee Management", use_container_width=True):
+        st.session_state["selected_menu"] = "💳 Fee Management"
+    if st.button("📅 Attendance Sheets", use_container_width=True):
+        st.session_state["selected_menu"] = "📅 Attendance Sheets"
+
+    st.divider()
+    if st.button("🔄 Refresh Data", use_container_width=True):
+        st.rerun()
+    if st.button("🔒 Secure Logout", use_container_width=True):
+        st.session_state["password_correct"] = False
+        st.rerun()
+
+menu_choice = st.session_state.get("selected_menu", "📊 Dashboard Overview")
+
+# ==================================================================
+# 1. DASHBOARD OVERVIEW
+# ==================================================================
+if menu_choice == "📊 Dashboard Overview":
+    st.markdown("""
+    <div class="dashboard-header">
+        <h1>Dashboard & Quick Statistics</h1>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Real-time summary of school operations and cloud metrics</p>
     </div>
     """, unsafe_allow_html=True)
 
-with col_refresh:
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Total Enrolled Students", len(students))
+    c2.metric("Total Staff Members", len(staff))
+    c3.metric("Active Campuses", len(campuses))
+    c4.metric("System Status", "🟢 Live Sync")
+
     st.write("")
-    st.write("")
-    if st.button("🔄 Refresh App", use_container_width=True):
-        st.rerun()
-
-# ------------------------------------------------------------------
-# TABS SETUP
-# ------------------------------------------------------------------
-tab_staff, tab_students, tab_fee, tab_attendance = st.tabs([
-    "👥 Staff Management", 
-    "🎓 Student Admissions", 
-    "💳 Fee Management",
-    "📅 Attendance"
-])
-
-# ==================================================================
-# TAB 1: STAFF MANAGEMENT
-# ==================================================================
-with tab_staff:
-    with st.sidebar:
-        st.subheader("Filter Staff")
-        campus_filter = st.selectbox("Campus", ["All Campuses"] + campuses)
-        search = st.text_input("Search Staff", placeholder="Name, designation, campus…")
-        st.divider()
-        if st.button("🔒 Logout", use_container_width=True):
-            st.session_state["password_correct"] = False
-            st.rerun()
-
-    if staff:
-        with st.expander("📊 Staff Analytics & Visual Charts", expanded=False):
+    col_chart1, col_chart2 = st.columns(2)
+    with col_chart1:
+        st.subheader("🏫 Staff Members per Campus")
+        if staff:
             df_staff = pd.DataFrame(staff)
-            col_c1, col_c2 = st.columns(2)
-            with col_c1:
-                st.markdown("##### 🏫 Staff Count by Campus")
-                if "campus" in df_staff.columns:
-                    st.bar_chart(df_staff["campus"].fillna("Not Specified").value_counts())
-            with col_c2:
-                st.markdown("##### 👩‍🏫 Staff Count by Designation")
-                if "designation" in df_staff.columns:
-                    st.bar_chart(df_staff["designation"].fillna("Not Specified").value_counts())
+            if "campus" in df_staff.columns:
+                st.bar_chart(df_staff["campus"].fillna("Unassigned").value_counts())
+    with col_chart2:
+        st.subheader("🎓 Students per Class Distribution")
+        if students:
+            df_std = pd.DataFrame(students)
+            if "class_name" in df_std.columns:
+                st.bar_chart(df_std["class_name"].fillna("Unassigned").value_counts())
 
-    with st.expander("➕ Add New Staff", expanded=False):
+# ==================================================================
+# 2. STAFF MANAGEMENT
+# ==================================================================
+elif menu_choice == "👥 Staff Management":
+    st.markdown("""
+    <div class="dashboard-header">
+        <h1>Staff Management & Directory</h1>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Manage faculty, designations, campuses and employee records</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.expander("➕ Add New Staff Member", expanded=False):
         with st.form("add_staff_form", clear_on_submit=True):
             c1, c2 = st.columns(2)
-            name = c1.text_input("Staff Name *")
-            father_name = c2.text_input("Father Name")
+            name = c1.text_input("Staff Full Name *")
+            father_name = c2.text_input("Father's Name")
             designation = c1.selectbox("Category / Designation *", [""] + designations)
-            campus = c2.selectbox("Campus", [""] + campuses)
+            campus = c2.selectbox("Campus Location", [""] + campuses)
             class_teacher_of = c1.text_input("Class Teacher Of (if applicable)")
             subject_teacher = c2.text_input("Subject Teacher (if applicable)")
 
-            submitted = st.form_submit_button("Save Record", type="primary")
-            if submitted:
+            if st.form_submit_button("Save Staff Record", type="primary"):
                 if not name.strip() or not designation:
                     st.error("Please enter Name and Designation.")
                 else:
@@ -417,21 +462,22 @@ with tab_staff:
                     st.success(f"{name} added successfully.")
                     st.rerun()
 
-    rows = staff
-    if campus_filter != "All Campuses":
-        rows = [s for s in rows if s.get("campus") == campus_filter]
-    if search.strip():
-        q = search.strip().lower()
-        rows = [s for s in rows if any(q in (v or "").lower() for v in [s.get("name"), s.get("designation"), s.get("campus")])]
+    f_col1, f_col2 = st.columns([4, 2])
+    with f_col1:
+        search_staff = st.text_input("🔍 Search Staff", placeholder="Filter by name, designation or campus...")
+    with f_col2:
+        st.write("")
+        st.write("")
+        if staff:
+            st.download_button("📄 Download Staff PDF", generate_staff_pdf(staff, custom_fields), "staff_report.pdf", "application/pdf", use_container_width=True)
 
-    col_title, col_pdf = st.columns([4, 2])
-    with col_title:
-        st.subheader(f"Staff Records ({len(rows)})")
-    with col_pdf:
-        if rows:
-            st.download_button("📄 Download PDF Report", generate_staff_pdf(rows, custom_fields), "staff_report.pdf", "application/pdf", use_container_width=True)
+    filtered_staff = staff
+    if search_staff.strip():
+        q = search_staff.strip().lower()
+        filtered_staff = [s for s in staff if any(q in (v or "").lower() for v in [s.get("name"), s.get("designation"), s.get("campus")])]
 
-    for s in rows:
+    st.subheader(f"📋 Staff Directory Records ({len(filtered_staff)})")
+    for s in filtered_staff:
         with st.container(border=True):
             c1, c2, c3 = st.columns([3, 5, 1])
             c1.markdown(f"**{s['name']}** \n`{s.get('id')}`")
@@ -440,16 +486,19 @@ with tab_staff:
                 sb.table("staff").delete().eq("id", s["id"]).execute()
                 st.rerun()
 
-
 # ==================================================================
-# TAB 2: STUDENT ADMISSIONS & RECORDS
+# 3. STUDENT ADMISSIONS
 # ==================================================================
-with tab_students:
-    st.header("🎓 Student Admissions & Class Records")
-    st.markdown("Register students here with monthly & yearly fee details. Data syncs instantly with Supabase.")
+elif menu_choice == "🎓 Student Admissions":
+    st.markdown("""
+    <div class="dashboard-header">
+        <h1>Student Admissions & Class Records</h1>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Register students with monthly/yearly fee setup and view class directories</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     with st.form("student_admission_form", clear_on_submit=True):
-        st.subheader("New Student Registration")
+        st.subheader("New Student Registration Form")
         sc1, sc2 = st.columns(2)
         
         with sc1:
@@ -461,9 +510,7 @@ with tab_students:
             std_fee = st.number_input("Monthly Fee Amount (Rs.)", min_value=0, value=3500, step=500)
             std_yearly_fee = st.number_input("Yearly Fee / Salana Fee (Rs.)", min_value=0, value=5000, step=500)
             
-        submit_std = st.form_submit_button("Register Student", type="primary")
-        
-        if submit_std:
+        if st.form_submit_button("Register Student", type="primary"):
             if std_name.strip() and std_father.strip():
                 try:
                     new_s_id = next_student_id(students)
@@ -509,7 +556,7 @@ with tab_students:
     st.subheader(f"📋 Enrolled Students in {view_class} ({len(class_students)})")
     
     if not class_students:
-        st.info(f"No students found in {view_class}. Use the form above to add students.")
+        st.info(f"No students found in {view_class}.")
     else:
         for st_item in class_students:
             with st.container(border=True):
@@ -521,8 +568,7 @@ with tab_students:
                 y_f = int(st_item.get('yearly_fee') or 5000)
                 col_d.markdown(f"Monthly: **Rs. {m_f:,}** | Yearly: **Rs. {y_f:,}**")
                 
-                # Inline Update / Edit Fee section for students
-                with st.expander("✏️ Update Fees for this Student"):
+                with st.expander("✏️ Update Fees"):
                     with st.form(key=f"edit_fee_form_{st_item['id']}"):
                         new_m = st.number_input("Monthly Fee", value=m_f, key=f"nm_{st_item['id']}")
                         new_y = st.number_input("Yearly Fee", value=y_f, key=f"ny_{st_item['id']}")
@@ -536,13 +582,16 @@ with tab_students:
                     st.success("Student removed.")
                     st.rerun()
 
-
 # ==================================================================
-# TAB 3: FEE MANAGEMENT & COMPREHENSIVE LEDGER PDF
+# 4. FEE MANAGEMENT
 # ==================================================================
-with tab_fee:
-    st.header("💳 Monthly Fee Tracker & Comprehensive Ledger")
-    st.markdown("Track monthly fee status and generate complete fee reports for individual classes or all classes combined.")
+elif menu_choice == "💳 Fee Management":
+    st.markdown("""
+    <div class="dashboard-header">
+        <h1>Monthly Fee Tracker & Ledger</h1>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Manage payment statuses, pending dues and comprehensive printable ledgers</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     current_month_str = datetime.now().strftime("%B %Y")
     
@@ -562,7 +611,7 @@ with tab_fee:
         if fee_target_students_pdf:
             comprehensive_pdf_bytes = generate_comprehensive_fee_pdf(fee_class_sel, fee_month_input, fee_target_students_pdf)
             st.download_button(
-                "📄 Download Comprehensive Fee Ledger PDF", 
+                "📄 Download Fee Ledger PDF", 
                 comprehensive_pdf_bytes, 
                 f"Fee_Ledger_{fee_class_sel.replace(' ', '_')}_{fee_month_input}.pdf", 
                 "application/pdf", 
@@ -603,7 +652,7 @@ with tab_fee:
     st.subheader(f"📋 Fee Status Ledger — {fee_class_sel} ({fee_month_input})")
     
     if not processed_fee_list:
-        st.info("No students enrolled yet to generate fee ledger.")
+        st.info("No students found.")
     else:
         for s_item in processed_fee_list:
             with st.container(border=True):
@@ -626,24 +675,27 @@ with tab_fee:
                             st.success(f"Fee collected successfully for {s_item['name']}!")
                             st.rerun()
                     else:
-                        if st.button("↩️ Undo / Make Pending", key=f"undo_btn_{s_item['id']}"):
+                        if st.button("↩️ Undo", key=f"undo_btn_{s_item['id']}"):
                             rec = fetch_fee_record(s_item["id"], fee_month_input)
                             if rec:
                                 sb.table("fee_records").update({"status": "Pending"}).eq("id", rec["id"]).execute()
                                 st.warning(f"Status changed back to Pending for {s_item['name']}.")
                                 st.rerun()
 
-
 # ==================================================================
-# TAB 4: MONTHLY ATTENDANCE PRINTABLE SHEET
+# 5. ATTENDANCE SHEETS
 # ==================================================================
-with tab_attendance:
-    st.header("📅 Monthly Printable Attendance Sheets")
-    st.markdown("Generate and print blank monthly attendance sheets for teachers to fill manually.")
+elif menu_choice == "📅 Attendance Sheets":
+    st.markdown("""
+    <div class="dashboard-header">
+        <h1>Monthly Attendance Sheets</h1>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Generate landscape printable attendance sheets with day grids (1 to 31)</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     at_c1, at_c2 = st.columns(2)
     with at_c1:
-        att_class_sel = st.selectbox("Select Class for Attendance Sheet", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="att_cls_sheet")
+        att_class_sel = st.selectbox("Select Class", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="att_cls_sheet")
     with at_c2:
         att_month_sel = st.selectbox("Select Month & Year", ["August 2026", "September 2026", "October 2026", "November 2026", "December 2026", "January 2027", "February 2027", "March 2027", "April 2027", "May 2027", "June 2027", "July 2027"], key="att_mnth_sheet")
 
@@ -653,8 +705,8 @@ with tab_attendance:
 
     col_info, col_btn = st.columns([4, 3])
     with col_info:
-        st.subheader(f"📋 {att_class_sel} Student List ({len(class_att_students)} Students)")
-        st.write(f"Clicking the button will generate a landscape PDF containing all students with dates 1 to 31 for **{att_month_sel}**.")
+        st.subheader(f"📋 {att_class_sel} Roster ({len(class_att_students)} Students)")
+        st.write(f"Generate blank printable attendance grid for **{att_month_sel}**.")
     
     with col_btn:
         st.write("")
@@ -662,20 +714,17 @@ with tab_attendance:
         if class_att_students:
             pdf_bytes = generate_monthly_attendance_pdf(att_class_sel, att_month_sel, class_att_students)
             st.download_button(
-                "📄 Download Monthly Attendance PDF", 
+                "📄 Download Attendance PDF", 
                 pdf_bytes, 
                 f"Attendance_{att_class_sel}_{att_month_sel}.pdf", 
                 "application/pdf", 
                 use_container_width=True
             )
         else:
-            st.warning("No students found in this class to generate sheet.")
+            st.warning("No students found in this class.")
 
     st.divider()
-    
     if class_att_students:
         for st_item in class_att_students:
             with st.container(border=True):
                 st.markdown(f"**{st_item['name']}** (`{st_item['id']}`) — Father: {st_item['father_name']}")
-    else:
-        st.info(f"No students enrolled in {att_class_sel} yet.")
