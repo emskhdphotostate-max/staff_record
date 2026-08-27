@@ -368,7 +368,7 @@ with tab_staff:
 
     rows = staff
     if campus_filter != "All Campuses":
-        rows = [s for s in rows if s.get("campus"] == campus_filter]
+        rows = [s for s in rows if s.get("campus") == campus_filter]
     if search.strip():
         q = search.strip().lower()
         rows = [s for s in rows if any(q in (v or "").lower() for v in [s.get("name"), s.get("designation"), s.get("campus")])]
