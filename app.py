@@ -1,36 +1,45 @@
 import streamlit as st
 
-# Check password function
 def check_password():
     def password_entered():
         if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
             st.session_state["password_correct"] = True
-            del st.session_state["password"]  # don't store password
+            del st.session_state["password"]
         else:
             st.session_state["password_correct"] = False
 
-    if "password_correct" not in st.session_state:
-        # First run, show input for password
-        st.text_input(
-            "Password enter karein app kholne ke liye:", type="password", on_change=password_entered, key="password"
-        )
-        return False
-    elif not st.session_state["password_correct"]:
-        # Password incorrect, show input + error
-        st.text_input(
-            "Password enter karein app kholne ke liye:", type="password", on_change=password_entered, key="password"
-        )
-        st.error("😕 Password ghalat hai, dubara koshish karein")
+    if "password_correct" not in st.session_state or not st.session_state["password_correct"]:
+        # --- STYLISH LOGIN SCREEN ---
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown(
+                """
+                <div style="background: linear-gradient(135deg, #4b134f, #2c3e50); padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; color: white; margin-top: 50px;">
+                    <h2 style="margin-bottom: 10px; font-family: sans-serif;">EXCELLENCE MODEL SCHOOL</h2>
+                    <h4 style="margin-top: 0; font-weight: 350; color: #dcdde1;">Staff Record Book - Secure Login</h4>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            st.write("")
+            
+            # Input box inside the flow
+            st.text_input(
+                "🔐 Enter Password to Access:", 
+                type="password", 
+                on_change=password_entered, 
+                key="password"
+            )
+            
+            if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+                st.error("😕 Incorrect password, please try again!")
+                
         return False
     else:
-        # Password correct
         return True
 
 if not check_password():
-    st.stop()  # Iske agay ka app load nahi hoga jab tak password theek na ho
-
-# --- AAPKA ASAL APP CODE YAHAN SE START HOGA ---
-# Jaise aapka Supabase connection aur baqi UI code hai
+    st.stop()
 
 
 import streamlit as st
