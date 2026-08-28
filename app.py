@@ -97,7 +97,6 @@ def get_image_base64(path):
 def clean_student_name(name_str):
     if not name_str:
         return ""
-    # Remove patterns like Class1 01, Class 1 01, etc. if accidentally joined
     cleaned = re.sub(r'Class\s*\d+\s*\d*', '', name_str, flags=re.IGNORECASE).strip()
     return cleaned if cleaned else name_str
 
@@ -254,10 +253,6 @@ def set_fee_status(student_id, month_year, m_stat, y_stat, amount=0):
             "amount": amount
         }).execute()
 
-def fetch_all_fee_records():
-    res = sb.table("fee_records").select("*").execute()
-    return res.data or []
-
 # ------------------------------------------------------------------
 # PDF Functions
 # ------------------------------------------------------------------
@@ -277,28 +272,6 @@ def generate_staff_pdf(data_rows, custom_fields_list):
         pdf.set_font("Arial", "", 10)
         pdf.cell(0, 6, f"Designation: {s.get('designation')}  |  Campus: {s.get('campus', '—')}", 0, 1, "L")
         pdf.cell(0, 6, f"Father Name: {s.get('father_name', '—')}  |  Class Teacher: {s.get('class_teacher_of', '—')}", 0, 1, "L")
-        pdf.ln(3)
-    return pdf.output(dest='S').encode('latin1')
-
-def generate_student_pdf(data_rows):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "Excellence Model School - Student Directory", 0, 1, "C")
-    pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 8, f"Total Students: {len(data_rows)}", 0, 1, "C")
-    pdf.ln(5)
-
-    for s in data_rows:
-        pdf.set_font("Arial", "B", 11)
-        pdf.set_fill_color(240, 230, 250)
-        pdf.cell(0, 8, f"Roll No: {s.get('id')} | Name: {s.get('name')}", 0, 1, "L", True)
-        pdf.set_font("Arial", "", 10)
-        pdf.cell(0, 6, f"Father Name: {s.get('father_name')}  |  Class: {s.get('class_name')} | Status: {s.get('status', 'Active')}", 0, 1, "L")
-        
-        m_fee = int(s.get('monthly_fee') or 3500)
-        y_fee = int(s.get('yearly_fee') or 5000)
-        pdf.cell(0, 6, f"Monthly Fee: Rs. {m_fee:,}  |  Yearly Fee: Rs. {y_fee:,}", 0, 1, "L")
         pdf.ln(3)
     return pdf.output(dest='S').encode('latin1')
 
@@ -642,7 +615,7 @@ elif menu_choice == "🎓 Student Admissions":
 
     with tab_classes:
         st.subheader("🏫 Manage Classes (Add & Remove)")
-        st.write("Here you can add new classes (e.g., Nursery, Playgroup, Advanced levels) or remove unwanted classes from the system.")
+        st.write("Here you can add new classes or remove unwanted classes from the system.")
 
         col_add_cls, col_list_cls = st.columns([1, 1])
 
@@ -743,15 +716,6 @@ elif menu_choice == "💳 Fee Management":
         target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name") == report_class]
         
         st.write(f"Showing ledger preview for **{report_class}** ({len(target_students)} students):")
-        
-        if st.button("📄 Download Comprehensive Fee Ledger PDF", type="primary"):
-            pdf_bytes = generate_comprehensive_fee_pdf(report_class, report_month, target_students)
-            st.download_button(
-                "📥 Click to Download PDF Ledger",
-                data=pdf_bytes,
-                file_name=f"fee_ledger_{report_class.replace(' ', '_')}.pdf",
-                mime="application/pdf"
-            )
 
 # ==================================================================
 # 5. ATTENDANCE SHEETS
@@ -765,7 +729,6 @@ elif menu_choice == "📅 Attendance Sheets":
     """, unsafe_allow_html=True)
 
     att_c1, att_c2 = st.columns(2)
-    # Restore "All Classes" option back in the attendance dropdown
     selected_att_class = att_c1.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="att_class_select")
     att_month = att_c2.text_input("Attendance Month & Year", value=datetime.now().strftime("%B %Y"), key="att_month_input")
 
@@ -785,7 +748,6 @@ elif menu_choice == "📅 Attendance Sheets":
                 mime="application/pdf"
             )
             
-        # Display HTML preview table
         table_html = f"""
         <div style="background: white; padding: 20px; border-radius: 10px; border: 1px solid #E0D8F0; overflow-x: auto;">
             <h3 style="text-align: center; margin-bottom: 5px;">Excellence Model School - Monthly Attendance Sheet</h3>
@@ -813,5 +775,3 @@ elif menu_choice == "📅 Attendance Sheets":
 
         table_html += "</tbody></table></div>"
         st.markdown(table_html, unsafe_allow_html=True)
-
-Kya aapko is code ko paste karne ke baad koi aur error ya masla pesh aa raha hai?
