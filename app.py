@@ -152,7 +152,7 @@ DEFAULT_CAMPUSES = [
     'Pakistan Chowk Campus', 'Park View Campus', 'Federal B Area Campus',
 ]
 
-CLASS_SEQUENCE = [
+DEFAULT_CLASSES = [
     "Montessori", "LKG", "UKG", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", 
     "Class 6", "Class 7", "Class 8", "Class 9", "Matric"
 ]
@@ -174,9 +174,13 @@ def fetch_campuses():
     labels = [r["label"] for r in (res.data or [])]
     return labels or DEFAULT_CAMPUSES
 
-def fetch_custom_fields():
-    res = sb.table("custom_fields").select("*").order("label").execute()
-    return res.data or []
+def fetch_classes_list():
+    try:
+        res = sb.table("classes").select("label").order("id").execute()
+        labels = [r["label"] for r in (res.data or [])]
+        return labels if labels else DEFAULT_CLASSES
+    except Exception:
+        return DEFAULT_CLASSES
 
 def next_staff_id(staff):
     nums = [int(re.search(r"(\d+)", s.get("id", "")).group(1)) for s in staff if re.search(r"(\d+)", s.get("id", ""))]
@@ -197,15 +201,8 @@ def add_student(record):
         record["status"] = "Active"
     sb.table("students").insert(record).execute()
 
-def update_student_fee(std_id, monthly_fee, yearly_fee):
-    sb.table("students").update({"monthly_fee": monthly_fee, "yearly_fee": yearly_fee}).eq("id", std_id).execute()
-
 def delete_student(std_id):
     sb.table("students").delete().eq("id", std_id).execute()
-
-def fetch_fee_records_for_student(student_id):
-    res = sb.table("fee_records").select("*").eq("student_id", student_id).execute()
-    return res.data or []
 
 def fetch_fee_record(student_id, month_year):
     res = sb.table("fee_records").select("*").eq("student_id", student_id).eq("month_year", month_year).execute()
@@ -440,7 +437,7 @@ staff = fetch_staff()
 students = fetch_students()
 designations = fetch_designations()
 campuses = fetch_campuses()
-custom_fields = fetch_custom_fields()
+class_sequence = fetch_classes_list()
 
 # ------------------------------------------------------------------
 # SIDEBAR NAVIGATION MENU
@@ -561,7 +558,7 @@ elif menu_choice == "👥 Staff Management":
         st.write("")
         st.write("")
         if staff:
-            st.download_button("📄 Download Staff PDF", generate_staff_pdf(staff, custom_fields), "staff_report.pdf", "application/pdf", use_container_width=True)
+            st.download_button("📄 Download Staff PDF", generate_staff_pdf(staff, []), "staff_report.pdf", "application/pdf", use_container_width=True)
 
     filtered_staff = staff
     if search_staff.strip():
@@ -589,7 +586,7 @@ elif menu_choice == "🎓 Student Admissions":
     </div>
     """, unsafe_allow_html=True)
     
-    tab_single, tab_bulk, tab_promo = st.tabs(["➕ Single Admission", "📥 CSV / Excel Import & Export", "🚀 Annual Class Promotion"])
+    tab_single, tab_bulk, tab_promo, tab_classes = st.tabs(["➕ Single Admission", "📥 CSV / Excel Import & Export", "🚀 Annual Class Promotion", "🏫 Manage Classes"])
     
     with tab_single:
         with st.form("student_admission_form", clear_on_submit=True):
@@ -599,7 +596,7 @@ elif menu_choice == "🎓 Student Admissions":
             with sc1:
                 std_name = st.text_input("Student Full Name *")
                 std_father = st.text_input("Father's Name *")
-                std_class = st.selectbox("Assign Class", CLASS_SEQUENCE)
+                std_class = st.selectbox("Assign Class", class_sequence)
                 
             with sc2:
                 std_fee = st.number_input("Monthly Fee Amount (Rs.)", min_value=0, value=3500, step=500)
@@ -651,7 +648,7 @@ elif menu_choice == "🎓 Student Admissions":
             template_df = pd.DataFrame([{
                 "name": "Ali Khan",
                 "father_name": "Muhammad Khan",
-                "class_name": "Class 1",
+                "class_name": class_sequence[0] if class_sequence else "Class 1",
                 "monthly_fee": 3500,
                 "yearly_fee": 5000,
                 "status": "Active"
@@ -683,7 +680,7 @@ elif menu_choice == "🎓 Student Admissions":
                         if not name_val or name_val.lower() == "nan":
                             continue
                         
-                        class_val = str(row.get("class_name", "Class 1")).strip()
+                        class_val = str(row.get("class_name", class_sequence[0] if class_sequence else "Class 1")).strip()
                         m_fee_val = int(row.get("monthly_fee", 3500) or 3500)
                         y_fee_val = int(row.get("yearly_fee", 5000) or 5000)
                         status_val = str(row.get("status", "Active")).strip()
@@ -709,16 +706,18 @@ elif menu_choice == "🎓 Student Admissions":
 
     with tab_promo:
         st.subheader("🚀 Annual Class Promotion & Session Upgrade")
-        st.info("Here you can run the annual promotion. **Montessori ➔ LKG ➔ UKG ➔ Class 1... Class 8 ➔ Class 9 ➔ Matric**, and **Matric students will automatically be marked as 'Graduated / Alumni'** (they will not be deleted, they will move to the Alumni section).")
+        sequence_str = " ➔ ".join(class_sequence)
+        st.info(f"Here you can run the annual promotion following this sequence: **{sequence_str}**. The last class in this sequence will automatically be marked as 'Graduated / Alumni'.")
 
         active_count = len([s for s in students if s.get("status", "Active") == "Active"])
         st.write(f"Total Active Students ready for promotion check: **{active_count}**")
 
-        if st.button("✨ Run Global Annual Promotion (Montessori to Matric Sequence, Matric ➔ Alumni)", type="primary"):
+        if st.button("✨ Run Global Annual Promotion", type="primary"):
             try:
                 all_stds = fetch_students()
                 promoted_count = 0
                 graduated_count = 0
+                last_class = class_sequence[-1] if class_sequence else "Matric"
 
                 for s in all_stds:
                     if s.get("status", "Active") != "Active":
@@ -727,26 +726,68 @@ elif menu_choice == "🎓 Student Admissions":
                     curr_cls = s.get("class_name")
                     s_id = s.get("id")
 
-                    if curr_cls == "Matric":
+                    if curr_cls == last_class:
                         sb.table("students").update({"status": "Graduated"}).eq("id", s_id).execute()
                         graduated_count += 1
-                    elif curr_cls in CLASS_SEQUENCE:
-                        idx = CLASS_SEQUENCE.index(curr_cls)
-                        if idx + 1 < len(CLASS_SEQUENCE):
-                            next_cls = CLASS_SEQUENCE[idx + 1]
+                    elif curr_cls in class_sequence:
+                        idx = class_sequence.index(curr_cls)
+                        if idx + 1 < len(class_sequence):
+                            next_cls = class_sequence[idx + 1]
                             sb.table("students").update({"class_name": next_cls}).eq("id", s_id).execute()
                             promoted_count += 1
 
-                st.success(f"Promotion completed successfully! {promoted_count} students promoted to next classes, and {graduated_count} Matric students moved to Alumni/Graduated records.")
+                st.success(f"Promotion completed successfully! {promoted_count} students promoted to next classes, and {graduated_count} {last_class} students moved to Alumni/Graduated records.")
                 st.rerun()
             except Exception as e:
                 st.error(f"Error during promotion: {e}")
+
+    with tab_classes:
+        st.subheader("🏫 Manage Classes (Add & Remove)")
+        st.write("Here you can add new classes (e.g., Nursery, Playgroup, Advanced levels) or remove unwanted classes from the system.")
+
+        col_add_cls, col_list_cls = st.columns([1, 1])
+
+        with col_add_cls:
+            with st.form("add_new_class_form", clear_on_submit=True):
+                new_cls_name = st.text_input("New Class Name (e.g. Nursery)")
+                if st.form_submit_button("Add Class", type="primary"):
+                    if new_cls_name.strip():
+                        c_name = new_cls_name.strip()
+                        if c_name in class_sequence:
+                            st.warning("This class already exists.")
+                        else:
+                            try:
+                                # Try inserting into classes table if exists
+                                sb.table("classes").insert({"label": c_name}).execute()
+                                st.success(f"Class '{c_name}' added successfully!")
+                                st.rerun()
+                            except Exception as e:
+                                # Fallback if table doesn't exist yet, try creating or note
+                                st.error(f"Error adding class in database table 'classes': {e}")
+                    else:
+                        st.warning("Please enter a class name.")
+
+        with col_list_cls:
+            st.write("### Current Class Sequence:")
+            for idx, c_item in enumerate(class_sequence):
+                col_cn, col_del = st.columns([3, 1])
+                col_cn.markdown(f"{idx+1}. **{c_item}**")
+                if col_del.button("❌ Remove", key=f"del_cls_{c_item}"):
+                    if len(class_sequence) <= 1:
+                        st.error("You cannot remove all classes.")
+                    else:
+                        try:
+                            sb.table("classes").delete().eq("label", c_item).execute()
+                            st.success(f"Class '{c_item}' removed.")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error removing class: {e}")
 
     st.divider()
     
     c_filt1, c_filt2 = st.columns([4, 2])
     with c_filt1:
-        view_class = st.selectbox("Select Class / Status to View Directory", ["All Active Classes"] + CLASS_SEQUENCE + ["Graduated / Alumni"], key="dir_class")
+        view_class = st.selectbox("Select Class / Status to View Directory", ["All Active Classes"] + class_sequence + ["Graduated / Alumni"], key="dir_class")
     
     if view_class == "All Active Classes":
         class_students = [s for s in students if s.get("status", "Active") == "Active"]
@@ -820,7 +861,7 @@ elif menu_choice == "💳 Fee Management":
     with tab_ledger:
         fc1, fc2, fc3 = st.columns([2, 2, 3])
         with fc1:
-            fee_class_sel = st.selectbox("Select Class", ["All Classes"] + CLASS_SEQUENCE, key="fee_cls_sel")
+            fee_class_sel = st.selectbox("Select Class", ["All Classes"] + class_sequence, key="fee_cls_sel")
         with fc2:
             fee_month_input = st.text_input("Billing Month & Year", value=current_month_str)
         with fc3:
@@ -830,7 +871,7 @@ elif menu_choice == "💳 Fee Management":
             if fee_class_sel == "All Classes":
                 fee_target_students_pdf = active_students_list
             else:
-                fee_target_students_pdf = [s for s in active_students_list if s.get("class_name") == fee_class_sel]
+                fee_target_students_pdf = [s for s in active_students_list if s.get("class_name"] == fee_class_sel]
                 
             if fee_target_students_pdf:
                 comprehensive_pdf_bytes = generate_comprehensive_fee_pdf(fee_class_sel, fee_month_input, fee_target_students_pdf)
@@ -1011,14 +1052,14 @@ elif menu_choice == "📅 Attendance Sheets":
 
     at_c1, at_c2 = st.columns(2)
     with at_c1:
-        att_class_sel = st.selectbox("Select Class", CLASS_SEQUENCE, key="att_cls_sheet")
+        att_class_sel = st.selectbox("Select Class", class_sequence, key="att_cls_sheet")
     with at_c2:
         att_month_sel = st.selectbox("Select Month & Year", ["August 2026", "September 2026", "October 2026", "November 2026", "December 2026", "January 2027", "February 2027", "March 2027", "April 2027", "May 2027", "June 2027", "July 2027"], key="att_mnth_sheet")
 
     st.divider()
 
     active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
-    class_att_students = [s for s in active_students_list if s.get("class_name") == att_class_sel]
+    class_att_students = [s for s in active_students_list if s.get("class_name"] == att_class_sel]
 
     col_info, col_btn = st.columns([4, 3])
     with col_info:
