@@ -662,21 +662,25 @@ elif menu_choice == "💳 Fee Management":
     
     with tab_rec:
         f_c1, f_c2 = st.columns(2)
-        selected_class_fee = f_c1.selectbox("Select Class for Fee Management", class_sequence, key="fee_class_select")
+        selected_class_fee = f_c1.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="fee_class_select")
         
         current_month_default = datetime.now().strftime("%B %Y")
         target_month_fee = f_c2.text_input("Billing Month & Year", value=current_month_default, key="fee_month_input")
         
-        class_students = [s for s in students if s.get("class_name") == selected_class_fee and s.get("status", "Active") == "Active"]
+        if selected_class_fee == "All Active Classes":
+            class_students = [s for s in students if s.get("status", "Active") == "Active"]
+        else:
+            class_students = [s for s in students if s.get("class_name") == selected_class_fee and s.get("status", "Active") == "Active"]
         
         st.subheader(f"Students in {selected_class_fee} ({len(class_students)})")
         
         if not class_students:
-            st.info(f"No active students found in {selected_class_fee}.")
+            st.info(f"No active students found.")
         else:
             for s in class_students:
                 s_id = s["id"]
                 s_name = s["name"]
+                s_cls = s.get("class_name", "")
                 m_fee = int(s.get("monthly_fee") or 3500)
                 y_fee = int(s.get("yearly_fee") or 5000)
                 
@@ -684,7 +688,8 @@ elif menu_choice == "💳 Fee Management":
                 
                 with st.container(border=True):
                     cols = st.columns([3, 2, 2, 2])
-                    cols[0].markdown(f"**{s_name}** \n`{s_id}` | Father: {s.get('father_name','—')}")
+                    display_title = f"**{s_name}** (`{s_id}`)" + (f" — *Class: {s_cls}*" if selected_class_fee == "All Active Classes" else "")
+                    cols[0].markdown(display_title + f"\nFather: {s.get('father_name','—')}")
                     cols[1].markdown(f"Monthly: **Rs. {m_fee:,}**")
                     cols[2].markdown(f"Yearly: **Rs. {y_fee:,}**")
                     
@@ -729,14 +734,13 @@ elif menu_choice == "📅 Attendance Sheets":
     selected_att_class = att_c1.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="att_class_select")
     att_month = att_c2.text_input("Attendance Month & Year", value=datetime.now().strftime("%B %Y"), key="att_month_input")
 
-    att_students = students if selected_att_class == "All Active Classes" else [s for s in students if s.get("class_name") == selected_att_class and s.get("status", "Active") == "Active"]
+    att_students = students if selected_att_class == "All Active Classes" else [s for s in students if s.get("class_name") == selected_att_class and s.get("status", "Active"] == "Active"]
 
     st.write(f"### Attendance Sheet Preview: {selected_att_class} ({att_month})")
     
     if not att_students:
         st.info("No students found for attendance sheet generation.")
     else:
-        # Directly generate and offer download button without requiring extra clicks
         att_pdf_bytes = generate_monthly_attendance_pdf(selected_att_class, att_month, att_students)
         st.download_button(
             "📥 Click Here to Download PDF Attendance Sheet",
