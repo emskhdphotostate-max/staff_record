@@ -94,6 +94,13 @@ def get_image_base64(path):
             return base64.b64encode(f.read()).decode()
     return None
 
+def clean_student_name(name_str):
+    if not name_str:
+        return ""
+    # Remove patterns like Class1 01, Class 1 01, etc. if accidentally joined
+    cleaned = re.sub(r'Class\s*\d+\s*\d*', '', name_str, flags=re.IGNORECASE).strip()
+    return cleaned if cleaned else name_str
+
 # ------------------------------------------------------------------
 # Secure Password Gate
 # ------------------------------------------------------------------
@@ -194,7 +201,11 @@ def next_student_id(students):
 
 def fetch_students():
     res = sb.table("students").select("*").order("id").execute()
-    return res.data or []
+    data = res.data or []
+    for s in data:
+        if s.get("name"):
+            s["name"] = clean_student_name(s["name"])
+    return data
 
 def add_student(record):
     if "status" not in record:
@@ -291,125 +302,13 @@ def generate_student_pdf(data_rows):
         pdf.ln(3)
     return pdf.output(dest='S').encode('latin1')
 
-def generate_collection_report_pdf(title_str, records_list, total_amt):
-    pdf = FPDF(orientation='P', unit='mm', format='A4')
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 15)
-    pdf.cell(0, 8, "Excellence Model School - Fee Collection Report", 0, 1, "C")
-    pdf.set_font("Arial", "B", 11)
-    pdf.cell(0, 6, f"Filter / Period: {title_str}", 0, 1, "C")
-    pdf.ln(4)
-
-    pdf.set_font("Arial", "B", 9)
-    pdf.set_fill_color(230, 230, 250)
-    
-    pdf.cell(25, 8, "Roll No", 1, 0, "C", True)
-    pdf.cell(45, 8, "Student Name", 1, 0, "C", True)
-    pdf.cell(35, 8, "Billing Month", 1, 0, "C", True)
-    pdf.cell(35, 8, "Payment Date", 1, 0, "C", True)
-    pdf.cell(45, 8, "Amount Collected", 1, 0, "C", True)
-    pdf.ln()
-
-    pdf.set_font("Arial", "", 9)
-    for r in records_list:
-        pdf.cell(25, 7, r.get("student_id", ""), 1, 0, "C")
-        pdf.cell(45, 7, r.get("student_name", ""), 1, 0, "L")
-        pdf.cell(35, 7, r.get("month_year", ""), 1, 0, "C")
-        pdf.cell(35, 7, str(r.get("paid_date", "")), 1, 0, "C")
-        amt = int(r.get("amount") or 0)
-        pdf.cell(45, 7, f"Rs. {amt:,}", 1, 0, "R")
-        pdf.ln()
-
-    pdf.set_font("Arial", "B", 10)
-    pdf.set_fill_color(240, 240, 240)
-    pdf.cell(140, 8, "Total Collection", 1, 0, "R", True)
-    pdf.cell(45, 8, f"Rs. {total_amt:,}", 1, 0, "R", True)
-    pdf.ln()
-
-    return pdf.output(dest='S').encode('latin1')
-
-def generate_comprehensive_fee_pdf(class_title, target_month, students_list):
-    pdf = FPDF(orientation='L', unit='mm', format='A4')
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 15)
-    pdf.cell(0, 8, "Excellence Model School - Comprehensive Fee Ledger Report", 0, 1, "C")
-    pdf.set_font("Arial", "B", 11)
-    pdf.cell(0, 6, f"Selection: {class_title}   |   Billing Month: {target_month}", 0, 1, "C")
-    pdf.ln(4)
-
-    pdf.set_font("Arial", "B", 9)
-    pdf.set_fill_color(230, 230, 250)
-    
-    pdf.cell(20, 8, "Roll No", 1, 0, "C", True)
-    pdf.cell(30, 8, "Class", 1, 0, "C", True)
-    pdf.cell(42, 8, "Student Name", 1, 0, "C", True)
-    pdf.cell(42, 8, "Father Name", 1, 0, "C", True)
-    pdf.cell(24, 8, "Monthly Fee", 1, 0, "C", True)
-    pdf.cell(24, 8, "Yearly Fee", 1, 0, "C", True)
-    pdf.cell(25, 8, "Status", 1, 0, "C", True)
-    pdf.cell(70, 8, "Remarks", 1, 0, "C", True)
-    pdf.ln()
-
-    pdf.set_font("Arial", "", 8)
-    total_monthly = 0
-    total_yearly = 0
-
-    for s in students_list:
-        m_stat, y_stat = get_fee_statuses(s["id"], target_month)
-        status_str = f"M:{m_stat[:1]} | Y:{y_stat[:1]}"
-        remarks_str = f"Monthly: {m_stat}, Yearly: {y_stat}"
-
-        m_fee = int(s.get('monthly_fee') or 3500)
-        y_fee = int(s.get('yearly_fee') or 5000)
-
-        total_monthly += m_fee
-        total_yearly += y_fee
-
-        pdf.cell(20, 7, s.get("id", ""), 1, 0, "C")
-        pdf.cell(30, 7, s.get("class_name", ""), 1, 0, "C")
-        pdf.cell(42, 7, s.get("name", ""), 1, 0, "L")
-        pdf.cell(42, 7, s.get("father_name", ""), 1, 0, "L")
-        
-        if m_stat == "Pending":
-            pdf.set_fill_color(220, 53, 69)
-            pdf.set_text_color(255, 255, 255)
-            fill_m = True
-        else:
-            fill_m = False
-        pdf.cell(24, 7, f"Rs. {m_fee:,}", 1, 0, "R", fill=fill_m)
-        
-        pdf.set_text_color(0, 0, 0)
-        
-        if y_stat == "Pending":
-            pdf.set_fill_color(220, 53, 69)
-            pdf.set_text_color(255, 255, 255)
-            fill_y = True
-        else:
-            fill_y = False
-        pdf.cell(24, 7, f"Rs. {y_fee:,}", 1, 0, "R", fill=fill_y)
-        
-        pdf.set_text_color(0, 0, 0)
-        pdf.cell(25, 7, status_str, 1, 0, "C")
-        pdf.cell(70, 7, remarks_str, 1, 0, "L")
-        pdf.ln()
-
-    pdf.set_font("Arial", "B", 9)
-    pdf.set_fill_color(240, 240, 240)
-    pdf.cell(134, 8, f"Total Students: {len(students_list)}", 1, 0, "L", True)
-    pdf.cell(24, 8, f"Rs. {total_monthly:,}", 1, 0, "R", True)
-    pdf.cell(24, 8, f"Rs. {total_yearly:,}", 1, 0, "R", True)
-    pdf.cell(95, 8, "---", 1, 0, "C", True)
-    pdf.ln()
-
-    return pdf.output(dest='S').encode('latin1')
-
 def generate_monthly_attendance_pdf(class_name, month_year_str, students_list):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font("Arial", "B", 14)
     pdf.cell(0, 8, f"Excellence Model School - Monthly Attendance Sheet", 0, 1, "C")
     pdf.set_font("Arial", "B", 11)
-    pdf.cell(0, 6, f"Class: {class_name}   |   Month: {month_year_str}", 0, 1, "C")
+    pdf.cell(0, 6, f"Class: {class_name}    |    Month: {month_year_str}", 0, 1, "C")
     pdf.ln(4)
 
     pdf.set_font("Arial", "B", 8)
@@ -761,85 +660,22 @@ elif menu_choice == "🎓 Student Admissions":
                                 st.success(f"Class '{c_name}' added successfully!")
                                 st.rerun()
                             except Exception as e:
-                                st.error(f"Error adding class in database table 'classes': {e}")
+                                st.error(f"Error adding class: {e}")
                     else:
                         st.warning("Please enter a class name.")
 
         with col_list_cls:
-            st.write("### Current Class Sequence:")
-            for idx, c_item in enumerate(class_sequence):
-                col_cn, col_del = st.columns([3, 1])
-                col_cn.markdown(f"{idx+1}. **{c_item}**")
-                if col_del.button("❌ Remove", key=f"del_cls_{c_item}"):
-                    if len(class_sequence) <= 1:
-                        st.error("You cannot remove all classes.")
-                    else:
-                        try:
-                            sb.table("classes").delete().eq("label", c_item).execute()
-                            st.success(f"Class '{c_item}' removed.")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Error removing class: {e}")
-
-    st.divider()
-    
-    c_filt1, c_filt2 = st.columns([4, 2])
-    with c_filt1:
-        view_class = st.selectbox("Select Class / Status to View Directory", ["All Active Classes"] + class_sequence + ["Graduated / Alumni"], key="dir_class")
-    
-    if view_class == "All Active Classes":
-        class_students = [s for s in students if s.get("status", "Active") == "Active"]
-    elif view_class == "Graduated / Alumni":
-        class_students = [s for s in students if s.get("status") == "Graduated"]
-    else:
-        class_students = [s for s in students if s.get("class_name") == view_class and s.get("status", "Active") == "Active"]
-
-    with c_filt2:
-        st.write("")
-        st.write("")
-        if class_students:
-            st.download_button(
-                "📄 Download Directory PDF", 
-                generate_student_pdf(class_students), 
-                f"students_{view_class.replace(' ', '_')}.pdf", 
-                "application/pdf", 
-                use_container_width=True
-            )
-
-    st.subheader(f"📋 Records for {view_class} ({len(class_students)})")
-    
-    if not class_students:
-        st.info(f"No students found in {view_class}.")
-    else:
-        for st_item in class_students:
-            with st.container(border=True):
-                col_i, col_d, col_btn = st.columns([4, 4, 2])
-                status_badge = "🟢 Active" if st_item.get('status', 'Active') == 'Active' else "🎓 Graduated"
-                col_i.markdown(f"**{st_item['name']}** (`{st_item['id']}`) — *{st_item.get('class_name', '—')}* | {status_badge}")
-                col_i.caption(f"Father: {st_item['father_name']}")
-                
-                m_f = int(st_item.get('monthly_fee') or 3500)
-                y_f = int(st_item.get('yearly_fee') or 5000)
-                col_d.markdown(f"Monthly: **Rs. {m_f:,}** | Yearly: **Rs. {y_f:,}**")
-                
-                with st.expander("✏️ Update Fees / Status"):
-                    with st.form(key=f"edit_fee_form_{st_item['id']}"):
-                        new_m = st.number_input("Monthly Fee", value=m_f, key=f"nm_{st_item['id']}")
-                        new_y = st.number_input("Yearly Fee", value=y_f, key=f"ny_{st_item['id']}")
-                        new_stat = st.selectbox("Student Status", ["Active", "Graduated"], index=0 if st_item.get('status', 'Active')=='Active' else 1, key=f"ns_{st_item['id']}")
-                        if st.form_submit_button("Update Student"):
-                            sb.table("students").update({
-                                "monthly_fee": new_m,
-                                "yearly_fee": new_y,
-                                "status": new_stat
-                            }).eq("id", st_item['id']).execute()
-                            st.success("Student updated successfully!")
-                            st.rerun()
-
-                if col_btn.button("🗑️ Delete", key=f"del_std_{st_item['id']}"):
-                    delete_student(st_item['id'])
-                    st.success("Student removed.")
-                    st.rerun()
+            st.write("### Current Active Classes")
+            for c in class_sequence:
+                rc1, rc2 = st.columns([3, 1])
+                rc1.write(f"• **{c}**")
+                if rc2.button("Remove", key=f"del_cls_{c}"):
+                    try:
+                        sb.table("classes").delete().eq("label", c).execute()
+                        st.success(f"Class '{c}' removed.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
 
 # ==================================================================
 # 4. FEE MANAGEMENT
@@ -847,195 +683,75 @@ elif menu_choice == "🎓 Student Admissions":
 elif menu_choice == "💳 Fee Management":
     st.markdown("""
     <div class="dashboard-header">
-        <h1>Monthly Fee Tracker & Collection Report</h1>
-        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Track monthly/yearly fee payment statuses, dues, collections, and reports</p>
+        <h1>Fee Management & Ledgers</h1>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Manage student dues, fee payments, and financial collection reports</p>
     </div>
     """, unsafe_allow_html=True)
+
+    tab_rec, tab_rep = st.tabs(["💵 Fee Collection & Records", "📊 Collection Reports & Ledger"])
     
-    current_month_str = datetime.now().strftime("%B %Y")
-    
-    tab_ledger, tab_report = st.tabs(["💳 Fee Status Ledger", "📊 Daily & Monthly Collection Reports"])
-    
-    with tab_ledger:
-        fc1, fc2, fc3 = st.columns([2, 2, 3])
-        with fc1:
-            fee_class_sel = st.selectbox("Select Class", ["All Classes"] + class_sequence, key="fee_cls_sel")
-        with fc2:
-            fee_month_input = st.text_input("Billing Month & Year", value=current_month_str)
-        with fc3:
-            st.write("")
-            st.write("")
-            active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
-            if fee_class_sel == "All Classes":
-                fee_target_students_pdf = active_students_list
-            else:
-                fee_target_students_pdf = [s for s in active_students_list if s.get("class_name") == fee_class_sel]
+    with tab_rec:
+        f_c1, f_c2 = st.columns(2)
+        selected_class_fee = f_c1.selectbox("Select Class for Fee Management", class_sequence, key="fee_class_select")
+        
+        current_month_default = datetime.now().strftime("%B %Y")
+        target_month_fee = f_c2.text_input("Billing Month & Year", value=current_month_default, key="fee_month_input")
+        
+        class_students = [s for s in students if s.get("class_name") == selected_class_fee and s.get("status", "Active") == "Active"]
+        
+        st.subheader(f"Students in {selected_class_fee} ({len(class_students)})")
+        
+        if not class_students:
+            st.info(f"No active students found in {selected_class_fee}.")
+        else:
+            for s in class_students:
+                s_id = s["id"]
+                s_name = s["name"]
+                m_fee = int(s.get("monthly_fee") or 3500)
+                y_fee = int(s.get("yearly_fee") or 5000)
                 
-            if fee_target_students_pdf:
-                comprehensive_pdf_bytes = generate_comprehensive_fee_pdf(fee_class_sel, fee_month_input, fee_target_students_pdf)
-                st.download_button(
-                    "📄 Download Fee Ledger PDF", 
-                    comprehensive_pdf_bytes, 
-                    f"Fee_Ledger_{fee_class_sel.replace(' ', '_')}_{fee_month_input}.pdf", 
-                    "application/pdf", 
-                    use_container_width=True
-                )
-            
-        fee_search_query = st.text_input("🔍 Search Active Student (by ID or Name)", placeholder="Type student name or ID...")
-
-        st.divider()
-        
-        active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
-        if fee_class_sel == "All Classes":
-            fee_target_students = active_students_list
-        else:
-            fee_target_students = [s for s in active_students_list if s.get("class_name") == fee_class_sel]
-        
-        if fee_search_query.strip():
-            q_fee = fee_search_query.strip().lower()
-            fee_target_students = [s for s in fee_target_students if q_fee in s.get("id", "").lower() or q_fee in s.get("name", "").lower()]
-
-        processed_fee_list = []
-        for s_obj in fee_target_students:
-            m_stat, y_stat = get_fee_statuses(s_obj["id"], fee_month_input)
-            processed_fee_list.append({
-                "id": s_obj["id"],
-                "name": s_obj["name"],
-                "class_name": s_obj.get("class_name", "—"),
-                "monthly_fee": int(s_obj.get("monthly_fee") or 3500),
-                "yearly_fee": int(s_obj.get("yearly_fee") or 5000),
-                "monthly_status": m_stat,
-                "yearly_status": y_stat
-            })
-        
-        tot_s = len(processed_fee_list)
-        paid_monthly = sum(1 for s in processed_fee_list if s['monthly_status'] == 'Paid')
-        pend_monthly = sum(1 for s in processed_fee_list if s['monthly_status'] == 'Pending')
-        pend_amt = sum(s['monthly_fee'] for s in processed_fee_list if s['monthly_status'] == 'Pending')
-        
-        all_fee_recs = fetch_all_fee_records()
-        filtered_student_ids = [s["id"] for s in fee_target_students]
-        total_collected = sum(int(r.get("amount") or 0) for r in all_fee_recs if r.get("student_id") in filtered_student_ids and r.get("month_year") == fee_month_input)
-
-        m1, m2, m3, m4, m5 = st.columns(5)
-        m1.metric("Total Students", tot_s)
-        m2.metric("Monthly Paid", paid_monthly)
-        m3.metric("Monthly Pending", pend_monthly)
-        m4.metric("Collected Amount", f"Rs. {total_collected:,}")
-        m5.metric("Pending Monthly Dues", f"Rs. {pend_amt:,}")
-        
-        st.subheader(f"📋 Fee Status Ledger — {fee_class_sel} ({fee_month_input})")
-        
-        if not processed_fee_list:
-            st.info("No active students found matching your criteria.")
-        else:
-            for s_item in processed_fee_list:
+                m_stat, y_stat = get_fee_statuses(s_id, target_month_fee)
+                
                 with st.container(border=True):
-                    col_info, col_m, col_y = st.columns([3, 3, 3])
+                    cols = st.columns([3, 2, 2, 2])
+                    cols[0].markdown(f"**{s_name}** \n`{s_id}` | Father: {s.get('father_name','—')}")
+                    cols[1].markdown(f"Monthly: **Rs. {m_fee:,}**")
+                    cols[2].markdown(f"Yearly: **Rs. {y_fee:,}**")
                     
-                    with col_info:
-                        st.markdown(f"**{s_item['name']}** (`{s_item['id']}`) — *{s_item['class_name']}*")
-                        st.caption(f"Monthly: Rs. {s_item['monthly_fee']:,} | Yearly: Rs. {s_item['yearly_fee']:,}")
+                    status_label = f"M:{m_stat} | Y:{y_stat}"
+                    cols[3].markdown(f"Status: `{status_label}`")
+                    
+                    btn_cols = st.columns(3)
+                    if btn_cols[0].button(f"{'✅ Monthly Paid' if m_stat=='Paid' else '⏳ Mark Monthly Paid'}", key=f"m_paid_{s_id}_{target_month_fee}"):
+                        new_m = "Pending" if m_stat=="Paid" else "Paid"
+                        total_amt = (m_fee if new_m=="Paid" else 0) + (y_fee if y_stat=="Paid" else 0)
+                        set_fee_status(s_id, target_month_fee, new_m, y_stat, total_amt)
+                        st.rerun()
                         
-                    with col_m:
-                        st.write("📅 **Monthly Fee**")
-                        if s_item["monthly_status"] == "Paid":
-                            st.markdown("🟢 **Paid**")
-                            if st.button("↩️ Undo Monthly", key=f"undo_m_{s_item['id']}"):
-                                set_fee_status(s_item["id"], fee_month_input, "Pending", s_item["yearly_status"])
-                                st.warning(f"Monthly status set to Pending for {s_item['name']}.")
-                                st.rerun()
-                        else:
-                            st.markdown("🔴 **Pending**")
-                            if st.button("✅ Pay Monthly", key=f"pay_m_{s_item['id']}", type="primary"):
-                                set_fee_status(s_item["id"], fee_month_input, "Paid", s_item["yearly_status"], s_item["monthly_fee"])
-                                st.success(f"Monthly fee collected for {s_item['name']}!")
-                                st.rerun()
-                                
-                    with col_y:
-                        st.write("⭐ **Yearly Fee**")
-                        if s_item["yearly_status"] == "Paid":
-                            st.markdown("🟢 **Paid**")
-                            if st.button("↩️ Undo Yearly", key=f"undo_y_{s_item['id']}"):
-                                set_fee_status(s_item["id"], fee_month_input, s_item["monthly_status"], "Pending")
-                                st.warning(f"Yearly status set to Pending for {s_item['name']}.")
-                                st.rerun()
-                        else:
-                            st.markdown("🔴 **Not Paid**")
-                            if st.button("✅ Pay Yearly", key=f"pay_y_{s_item['id']}", type="primary"):
-                                set_fee_status(s_item["id"], fee_month_input, s_item["monthly_status"], "Paid", s_item["yearly_fee"])
-                                st.success(f"Yearly fee collected for {s_item['name']}!")
-                                st.rerun()
+                    if btn_cols[1].button(f"{'✅ Yearly Paid' if y_stat=='Paid' else '⏳ Mark Yearly Paid'}", key=f"y_paid_{s_id}_{target_month_fee}"):
+                        new_y = "Pending" if y_stat=="Paid" else "Paid"
+                        total_amt = (m_fee if m_stat=="Paid" else 0) + (y_fee if new_y=="Paid" else 0)
+                        set_fee_status(s_id, target_month_fee, m_stat, new_y, total_amt)
+                        st.rerun()
 
-    with tab_report:
-        st.subheader("📅 Fee Collection Summary & Print Report")
-        rep_mode = st.radio("Report Type:", ["Daily Collection (Calendar Date)", "Monthly Collection (e.g., August 2026)"], horizontal=True)
-
-        all_records = fetch_all_fee_records()
-        std_name_map = {s["id"]: s["name"] for s in students}
-
-        formatted_records = []
-        for r in all_records:
-            s_id = r.get("student_id")
-            formatted_records.append({
-                "student_id": s_id,
-                "student_name": std_name_map.get(s_id, "Unknown"),
-                "month_year": r.get("month_year"),
-                "paid_date": r.get("paid_date"),
-                "amount": r.get("amount") or 0
-            })
-
-        if rep_mode == "Daily Collection (Calendar Date)":
-            selected_date = st.date_input("Select Date for Collection Record", value=datetime.now())
-            date_str = selected_date.strftime("%Y-%m-%d")
-            
-            filtered_recs = [r for r in formatted_records if r.get("paid_date") == date_str]
-            total_col = sum(int(r.get("amount") or 0) for r in filtered_recs)
-
-            st.markdown(f"### Collection on: `{date_str}`")
-            st.metric("Total Amount Collected", f"Rs. {total_col:,}")
-
-            if filtered_recs:
-                df_rep = pd.DataFrame(filtered_recs)[["student_id", "student_name", "month_year", "amount"]]
-                st.dataframe(df_rep, use_container_width=True)
-
-                pdf_bytes = generate_collection_report_pdf(f"Date: {date_str}", filtered_recs, total_col)
-                st.download_button(
-                    "📄 Download Daily Collection PDF",
-                    pdf_bytes,
-                    f"Collection_Daily_{date_str}.pdf",
-                    "application/pdf"
-                )
-            else:
-                st.info(f"No fee collections recorded for {date_str}.")
-
-        else:
-            col_m_input = st.text_input("Enter Month & Year for Collection Report", value=current_month_str)
-            
-            filtered_recs = []
-            for r in formatted_records:
-                p_date = str(r.get("paid_date") or "")
-                if col_m_input.lower() in (r.get("month_year") or "").lower() or col_m_input.lower() in p_date.lower():
-                    filtered_recs.append(r)
-
-            total_col = sum(int(r.get("amount") or 0) for r in filtered_recs)
-
-            st.markdown(f"### Collection for Month: `{col_m_input}`")
-            st.metric("Total Monthly Collection", f"Rs. {total_col:,}")
-
-            if filtered_recs:
-                df_rep = pd.DataFrame(filtered_recs)[["student_id", "student_name", "paid_date", "amount"]]
-                st.dataframe(df_rep, use_container_width=True)
-
-                pdf_bytes = generate_collection_report_pdf(f"Month: {col_m_input}", filtered_recs, total_col)
-                st.download_button(
-                    "📄 Download Monthly Collection PDF",
-                    pdf_bytes,
-                    f"Collection_Monthly_{col_m_input.replace(' ', '_')}.pdf",
-                    "application/pdf"
-                )
-            else:
-                st.info(f"No fee collections recorded for {col_m_input}.")
+    with tab_rep:
+        st.subheader("📊 Financial Collection Reports & Ledger Export")
+        rep_col1, rep_col2 = st.columns(2)
+        report_month = rep_col1.text_input("Report Month & Year", value=datetime.now().strftime("%B %Y"), key="rep_month")
+        report_class = rep_col2.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="rep_class")
+        
+        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name") == report_class]
+        
+        st.write(f"Showing ledger preview for **{report_class}** ({len(target_students)} students):")
+        
+        if st.button("📄 Download Comprehensive Fee Ledger PDF", type="primary"):
+            pdf_bytes = generate_comprehensive_fee_pdf(report_class, report_month, target_students)
+            st.download_button(
+                "📥 Click to Download PDF Ledger",
+                data=pdf_bytes,
+                file_name=f"fee_ledger_{report_class.replace(' ', '_')}.pdf",
+                mime="application/pdf"
+            )
 
 # ==================================================================
 # 5. ATTENDANCE SHEETS
@@ -1044,43 +760,58 @@ elif menu_choice == "📅 Attendance Sheets":
     st.markdown("""
     <div class="dashboard-header">
         <h1>Monthly Attendance Sheets</h1>
-        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Generate landscape printable attendance sheets with day grids (1 to 31)</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Generate and print monthly attendance registers for any class</p>
     </div>
     """, unsafe_allow_html=True)
 
-    at_c1, at_c2 = st.columns(2)
-    with at_c1:
-        att_class_sel = st.selectbox("Select Class", class_sequence, key="att_cls_sheet")
-    with at_c2:
-        att_month_sel = st.selectbox("Select Month & Year", ["August 2026", "September 2026", "October 2026", "November 2026", "December 2026", "January 2027", "February 2027", "March 2027", "April 2027", "May 2027", "June 2027", "July 2027"], key="att_mnth_sheet")
+    att_c1, att_c2 = st.columns(2)
+    # Restore "All Classes" option back in the attendance dropdown
+    selected_att_class = att_c1.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="att_class_select")
+    att_month = att_c2.text_input("Attendance Month & Year", value=datetime.now().strftime("%B %Y"), key="att_month_input")
 
-    st.divider()
+    att_students = students if selected_att_class == "All Active Classes" else [s for s in students if s.get("class_name") == selected_att_class and s.get("status", "Active") == "Active"]
 
-    active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
-    class_att_students = [s for s in active_students_list if s.get("class_name") == att_class_sel]
-
-    col_info, col_btn = st.columns([4, 3])
-    with col_info:
-        st.subheader(f"📋 {att_class_sel} Roster ({len(class_att_students)} Students)")
-        st.write(f"Generate blank printable attendance grid for **{att_month_sel}**.")
+    st.write(f"### Attendance Sheet Preview: {selected_att_class} ({att_month})")
     
-    with col_btn:
-        st.write("")
-        st.write("")
-        if class_att_students:
-            pdf_bytes = generate_monthly_attendance_pdf(att_class_sel, att_month_sel, class_att_students)
+    if not att_students:
+        st.info("No students found for attendance sheet generation.")
+    else:
+        if st.button("📄 Download Monthly Attendance PDF", type="primary"):
+            att_pdf_bytes = generate_monthly_attendance_pdf(selected_att_class, att_month, att_students)
             st.download_button(
-                "📄 Download Attendance PDF", 
-                pdf_bytes, 
-                f"Attendance_{att_class_sel}_{att_month_sel}.pdf", 
-                "application/pdf", 
-                use_container_width=True
+                "📥 Click Here to Download PDF Attendance Sheet",
+                data=att_pdf_bytes,
+                file_name=f"attendance_{selected_att_class.replace(' ', '_')}.pdf",
+                mime="application/pdf"
             )
-        else:
-            st.warning("No active students found in this class.")
+            
+        # Display HTML preview table
+        table_html = f"""
+        <div style="background: white; padding: 20px; border-radius: 10px; border: 1px solid #E0D8F0; overflow-x: auto;">
+            <h3 style="text-align: center; margin-bottom: 5px;">Excellence Model School - Monthly Attendance Sheet</h3>
+            <p style="text-align: center; color: #666; margin-top: 0;">Class: <b>{selected_att_class}</b> | Month: <b>{att_month}</b></p>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <thead>
+                    <tr style="background-color: #3F2B96; color: white;">
+                        <th style="border: 1px solid #ccc; padding: 6px; width: 80px;">Roll No</th>
+                        <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Student Name</th>
+        """
+        for d in range(1, 32):
+            table_html += f'<th style="border: 1px solid #ccc; padding: 4px; width: 22px; text-align: center;">{d}</th>'
+        table_html += "</tr></thead><tbody>"
 
-    st.divider()
-    if class_att_students:
-        for st_item in class_att_students:
-            with st.container(border=True):
-                st.markdown(f"**{st_item['name']}** (`{st_item['id']}`) — Father: {st_item['father_name']}")
+        for s in att_students:
+            s_name = clean_student_name(s.get("name", ""))
+            table_html += f"""
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 5px; text-align: center; font-weight: bold;">{s.get("id")}</td>
+                    <td style="border: 1px solid #ccc; padding: 5px;">{s_name}</td>
+            """
+            for d in range(1, 32):
+                table_html += '<td style="border: 1px solid #ccc; padding: 5px;"></td>'
+            table_html += "</tr>"
+
+        table_html += "</tbody></table></div>"
+        st.markdown(table_html, unsafe_allow_html=True)
+
+Kya aapko is code ko paste karne ke baad koi aur error ya masla pesh aa raha hai?
