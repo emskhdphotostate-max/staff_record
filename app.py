@@ -152,6 +152,11 @@ DEFAULT_CAMPUSES = [
     'Pakistan Chowk Campus', 'Park View Campus', 'Federal B Area Campus',
 ]
 
+CLASS_SEQUENCE = [
+    "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", 
+    "Class 6", "Class 7", "Class 8", "Class 9", "Matric"
+]
+
 # ------------------------------------------------------------------
 # Data Helpers
 # ------------------------------------------------------------------
@@ -188,6 +193,8 @@ def fetch_students():
     return res.data or []
 
 def add_student(record):
+    if "status" not in record:
+        record["status"] = "Active"
     sb.table("students").insert(record).execute()
 
 def update_student_fee(std_id, monthly_fee, yearly_fee):
@@ -279,7 +286,7 @@ def generate_student_pdf(data_rows):
         pdf.set_fill_color(240, 230, 250)
         pdf.cell(0, 8, f"Roll No: {s.get('id')} | Name: {s.get('name')}", 0, 1, "L", True)
         pdf.set_font("Arial", "", 10)
-        pdf.cell(0, 6, f"Father Name: {s.get('father_name')}  |  Class: {s.get('class_name')}", 0, 1, "L")
+        pdf.cell(0, 6, f"Father Name: {s.get('father_name')}  |  Class: {s.get('class_name')} | Status: {s.get('status', 'Active')}", 0, 1, "L")
         
         m_fee = int(s.get('monthly_fee') or 3500)
         y_fee = int(s.get('yearly_fee') or 5000)
@@ -486,10 +493,13 @@ if menu_choice == "📊 Dashboard Overview":
     </div>
     """, unsafe_allow_html=True)
 
+    active_students = [s for s in students if s.get("status", "Active") == "Active"]
+    alumni_students = [s for s in students if s.get("status") == "Graduated"]
+
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Enrolled Students", len(students))
-    c2.metric("Total Staff Members", len(staff))
-    c3.metric("Active Campuses", len(campuses))
+    c1.metric("Active Students", len(active_students))
+    c2.metric("Graduated / Alumni", len(alumni_students))
+    c3.metric("Total Staff Members", len(staff))
     c4.metric("System Status", "🟢 Live Sync")
 
     st.write("")
@@ -501,9 +511,9 @@ if menu_choice == "📊 Dashboard Overview":
             if "campus" in df_staff.columns:
                 st.bar_chart(df_staff["campus"].fillna("Unassigned").value_counts())
     with col_chart2:
-        st.subheader("🎓 Students per Class Distribution")
-        if students:
-            df_std = pd.DataFrame(students)
+        st.subheader("🎓 Active Students per Class Distribution")
+        if active_students:
+            df_std = pd.DataFrame(active_students)
             if "class_name" in df_std.columns:
                 st.bar_chart(df_std["class_name"].fillna("Unassigned").value_counts())
 
@@ -575,11 +585,11 @@ elif menu_choice == "🎓 Student Admissions":
     st.markdown("""
     <div class="dashboard-header">
         <h1>Student Admissions & Class Records</h1>
-        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Register students, manage fees, and export/import student lists via CSV/Excel</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Register students, manage fees, CSV import/export, and annual class promotions</p>
     </div>
     """, unsafe_allow_html=True)
     
-    tab_single, tab_bulk = st.tabs(["➕ Single Admission", "📥 CSV / Excel Import & Export"])
+    tab_single, tab_bulk, tab_promo = st.tabs(["➕ Single Admission", "📥 CSV / Excel Import & Export", "🚀 Annual Class Promotion"])
     
     with tab_single:
         with st.form("student_admission_form", clear_on_submit=True):
@@ -589,7 +599,7 @@ elif menu_choice == "🎓 Student Admissions":
             with sc1:
                 std_name = st.text_input("Student Full Name *")
                 std_father = st.text_input("Father's Name *")
-                std_class = st.selectbox("Assign Class", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"])
+                std_class = st.selectbox("Assign Class", CLASS_SEQUENCE)
                 
             with sc2:
                 std_fee = st.number_input("Monthly Fee Amount (Rs.)", min_value=0, value=3500, step=500)
@@ -605,7 +615,8 @@ elif menu_choice == "🎓 Student Admissions":
                             "father_name": std_father.strip(),
                             "class_name": std_class,
                             "monthly_fee": std_fee,
-                            "yearly_fee": std_yearly_fee
+                            "yearly_fee": std_yearly_fee,
+                            "status": "Active"
                         }
                         add_student(student_data)
                         st.success(f"Student {std_name} ({new_s_id}) successfully enrolled in {std_class}!")
@@ -617,14 +628,12 @@ elif menu_choice == "🎓 Student Admissions":
 
     with tab_bulk:
         st.subheader("📁 Bulk Import / Export Students (CSV)")
-        st.write("You can download the existing student list or a template as a CSV file, fill it in Excel/Google Sheets, and upload it back here to register multiple students at once.")
+        st.write("You can download the existing student list or template as a CSV file, fill it, and upload it back here.")
         
         col_ex1, col_ex2 = st.columns(2)
         with col_ex1:
-            # Export CSV button
             if students:
-                df_export = pd.DataFrame(students)[["id", "name", "father_name", "class_name", "monthly_fee", "yearly_fee"]]
-                df_export.columns = ["student_id", "name", "father_name", "class_name", "monthly_fee", "yearly_fee"]
+                df_export = pd.DataFrame(students)[["id", "name", "father_name", "class_name", "monthly_fee", "yearly_fee", "status"]]
                 csv_data = df_export.to_csv(index=False).encode('utf-8')
                 st.download_button(
                     "📥 Download Existing Students (CSV)",
@@ -637,13 +646,13 @@ elif menu_choice == "🎓 Student Admissions":
                 st.info("No students available to export.")
                 
         with col_ex2:
-            # Download Template CSV
             template_df = pd.DataFrame([{
                 "name": "Ali Khan",
                 "father_name": "Muhammad Khan",
                 "class_name": "Class 1",
                 "monthly_fee": 3500,
-                "yearly_fee": 5000
+                "yearly_fee": 5000,
+                "status": "Active"
             }])
             template_csv = template_df.to_csv(index=False).encode('utf-8')
             st.download_button(
@@ -675,10 +684,9 @@ elif menu_choice == "🎓 Student Admissions":
                         class_val = str(row.get("class_name", "Class 1")).strip()
                         m_fee_val = int(row.get("monthly_fee", 3500) or 3500)
                         y_fee_val = int(row.get("yearly_fee", 5000) or 5000)
+                        status_val = str(row.get("status", "Active")).strip()
                         
-                        # Generate unique ID for each imported student
                         new_id = next_student_id(current_students)
-                        # Add locally to list so next_student_id updates correctly in loop
                         current_students.append({"id": new_id})
                         
                         sb.table("students").insert({
@@ -687,7 +695,8 @@ elif menu_choice == "🎓 Student Admissions":
                             "father_name": father_val,
                             "class_name": class_val,
                             "monthly_fee": m_fee_val,
-                            "yearly_fee": y_fee_val
+                            "yearly_fee": y_fee_val,
+                            "status": status_val if status_val in ["Active", "Graduated"] else "Active"
                         }).execute()
                         success_count += 1
                         
@@ -696,30 +705,68 @@ elif menu_choice == "🎓 Student Admissions":
             except Exception as e:
                 st.error(f"Error parsing CSV file: {e}")
 
+    with tab_promo:
+        st.subheader("🚀 Annual Class Promotion & Session Upgrade")
+        st.info("Here you can run the annual promotion. **Class 8 will move to Class 9**, **Class 9 will move to Matric**, and **Matric students will automatically be marked as 'Graduated / Alumni'** (they will not be deleted, they will move to the Alumni section).")
+
+        active_count = len([s for s in students if s.get("status", "Active") == "Active"])
+        st.write(f"Total Active Students ready for promotion check: **{active_count}**")
+
+        if st.button("✨ Run Global Annual Promotion (Class 1-8 ➔ Next Class, Matric ➔ Alumni)", type="primary"):
+            try:
+                all_stds = fetch_students()
+                promoted_count = 0
+                graduated_count = 0
+
+                for s in all_stds:
+                    if s.get("status", "Active") != "Active":
+                        continue
+                    
+                    curr_cls = s.get("class_name")
+                    s_id = s.get("id")
+
+                    if curr_cls == "Matric":
+                        # Mark as Graduated / Alumni
+                        sb.table("students").update({"status": "Graduated"}).eq("id", s_id).execute()
+                        graduated_count += 1
+                    elif curr_cls in CLASS_SEQUENCE:
+                        idx = CLASS_SEQUENCE.index(curr_cls)
+                        if idx + 1 < len(CLASS_SEQUENCE):
+                            next_cls = CLASS_SEQUENCE[idx + 1]
+                            sb.table("students").update({"class_name": next_cls}).eq("id", s_id).execute()
+                            promoted_count += 1
+
+                st.success(f"Promotion completed successfully! {promoted_count} students promoted to next classes, and {graduated_count} Matric students moved to Alumni/Graduated records.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error during promotion: {e}")
+
     st.divider()
     
     c_filt1, c_filt2 = st.columns([4, 2])
     with c_filt1:
-        view_class = st.selectbox("Select Class to View Directory", ["All Classes", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="dir_class")
+        view_class = st.selectbox("Select Class / Status to View Directory", ["All Active Classes"] + CLASS_SEQUENCE + ["Graduated / Alumni"], key="dir_class")
     
-    if view_class == "All Classes":
-        class_students = students
+    if view_class == "All Active Classes":
+        class_students = [s for s in students if s.get("status", "Active") == "Active"]
+    elif view_class == "Graduated / Alumni":
+        class_students = [s for s in students if s.get("status") == "Graduated"]
     else:
-        class_students = [s for s in students if s.get("class_name") == view_class]
+        class_students = [s for s in students if s.get("class_name") == view_class and s.get("status", "Active") == "Active"]
 
     with c_filt2:
         st.write("")
         st.write("")
         if class_students:
             st.download_button(
-                "📄 Download Class PDF", 
+                "📄 Download Directory PDF", 
                 generate_student_pdf(class_students), 
                 f"students_{view_class.replace(' ', '_')}.pdf", 
                 "application/pdf", 
                 use_container_width=True
             )
 
-    st.subheader(f"📋 Enrolled Students in {view_class} ({len(class_students)})")
+    st.subheader(f"📋 Records for {view_class} ({len(class_students)})")
     
     if not class_students:
         st.info(f"No students found in {view_class}.")
@@ -727,20 +774,26 @@ elif menu_choice == "🎓 Student Admissions":
         for st_item in class_students:
             with st.container(border=True):
                 col_i, col_d, col_btn = st.columns([4, 4, 2])
-                col_i.markdown(f"**{st_item['name']}** (`{st_item['id']}`) — *{st_item.get('class_name', '—')}*")
+                status_badge = "🟢 Active" if st_item.get('status', 'Active') == 'Active' else "🎓 Graduated"
+                col_i.markdown(f"**{st_item['name']}** (`{st_item['id']}`) — *{st_item.get('class_name', '—')}* | {status_badge}")
                 col_i.caption(f"Father: {st_item['father_name']}")
                 
                 m_f = int(st_item.get('monthly_fee') or 3500)
                 y_f = int(st_item.get('yearly_fee') or 5000)
                 col_d.markdown(f"Monthly: **Rs. {m_f:,}** | Yearly: **Rs. {y_f:,}**")
                 
-                with st.expander("✏️ Update Fees"):
+                with st.expander("✏️ Update Fees / Status"):
                     with st.form(key=f"edit_fee_form_{st_item['id']}"):
                         new_m = st.number_input("Monthly Fee", value=m_f, key=f"nm_{st_item['id']}")
                         new_y = st.number_input("Yearly Fee", value=y_f, key=f"ny_{st_item['id']}")
-                        if st.form_submit_button("Update Fee"):
-                            update_student_fee(st_item['id'], new_m, new_y)
-                            st.success("Fee updated successfully!")
+                        new_stat = st.selectbox("Student Status", ["Active", "Graduated"], index=0 if st_item.get('status', 'Active')=='Active' else 1, key=f"ns_{st_item['id']}")
+                        if st.form_submit_button("Update Student"):
+                            sb.table("students").update({
+                                "monthly_fee": new_m,
+                                "yearly_fee": new_y,
+                                "status": new_stat
+                            }).eq("id", st_item['id']).execute()
+                            st.success("Student updated successfully!")
                             st.rerun()
 
                 if col_btn.button("🗑️ Delete", key=f"del_std_{st_item['id']}"):
@@ -755,7 +808,7 @@ elif menu_choice == "💳 Fee Management":
     st.markdown("""
     <div class="dashboard-header">
         <h1>Monthly Fee Tracker & Collection Report</h1>
-        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Track monthly/yearly fee payment statuses, dues, collections, and daily/monthly reports</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Track monthly/yearly fee payment statuses, dues, collections, and reports</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -766,16 +819,17 @@ elif menu_choice == "💳 Fee Management":
     with tab_ledger:
         fc1, fc2, fc3 = st.columns([2, 2, 3])
         with fc1:
-            fee_class_sel = st.selectbox("Select Class", ["All Classes", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="fee_cls_sel")
+            fee_class_sel = st.selectbox("Select Class", ["All Classes"] + CLASS_SEQUENCE, key="fee_cls_sel")
         with fc2:
             fee_month_input = st.text_input("Billing Month & Year", value=current_month_str)
         with fc3:
             st.write("")
             st.write("")
+            active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
             if fee_class_sel == "All Classes":
-                fee_target_students_pdf = students
+                fee_target_students_pdf = active_students_list
             else:
-                fee_target_students_pdf = [s for s in students if s.get("class_name") == fee_class_sel]
+                fee_target_students_pdf = [s for s in active_students_list if s.get("class_name") == fee_class_sel]
                 
             if fee_target_students_pdf:
                 comprehensive_pdf_bytes = generate_comprehensive_fee_pdf(fee_class_sel, fee_month_input, fee_target_students_pdf)
@@ -787,14 +841,15 @@ elif menu_choice == "💳 Fee Management":
                     use_container_width=True
                 )
             
-        fee_search_query = st.text_input("🔍 Search Student (by ID or Name)", placeholder="Type student name or ID (e.g. STD-001, Shehzad)...")
+        fee_search_query = st.text_input("🔍 Search Active Student (by ID or Name)", placeholder="Type student name or ID...")
 
         st.divider()
         
+        active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
         if fee_class_sel == "All Classes":
-            fee_target_students = students
+            fee_target_students = active_students_list
         else:
-            fee_target_students = [s for s in students if s.get("class_name") == fee_class_sel]
+            fee_target_students = [s for s in active_students_list if s.get("class_name") == fee_class_sel]
         
         if fee_search_query.strip():
             q_fee = fee_search_query.strip().lower()
@@ -820,7 +875,7 @@ elif menu_choice == "💳 Fee Management":
         
         all_fee_recs = fetch_all_fee_records()
         filtered_student_ids = [s["id"] for s in fee_target_students]
-        total_collected = sum(int(r.get("amount") or 0) for r in all_fee_recs if r.get("student_id") in filtered_student_ids and r.get("month_year") == fee_month_input)
+        total_collected = sum(int(r.get("amount") or 0) for r in all_fee_recs if r.get("student_id") in filtered_student_ids and r.get("month_year"] == fee_month_input)
 
         m1, m2, m3, m4, m5 = st.columns(5)
         m1.metric("Total Students", tot_s)
@@ -832,7 +887,7 @@ elif menu_choice == "💳 Fee Management":
         st.subheader(f"📋 Fee Status Ledger — {fee_class_sel} ({fee_month_input})")
         
         if not processed_fee_list:
-            st.info("No students found matching your search.")
+            st.info("No active students found matching your criteria.")
         else:
             for s_item in processed_fee_list:
                 with st.container(border=True):
@@ -874,8 +929,6 @@ elif menu_choice == "💳 Fee Management":
 
     with tab_report:
         st.subheader("📅 Fee Collection Summary & Print Report")
-        st.write("Select a specific date or an entire month to view and download collection details.")
-
         rep_mode = st.radio("Report Type:", ["Daily Collection (Calendar Date)", "Monthly Collection (e.g., August 2026)"], horizontal=True)
 
         all_records = fetch_all_fee_records()
@@ -957,13 +1010,14 @@ elif menu_choice == "📅 Attendance Sheets":
 
     at_c1, at_c2 = st.columns(2)
     with at_c1:
-        att_class_sel = st.selectbox("Select Class", ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Matric"], key="att_cls_sheet")
+        att_class_sel = st.selectbox("Select Class", CLASS_SEQUENCE, key="att_cls_sheet")
     with at_c2:
         att_month_sel = st.selectbox("Select Month & Year", ["August 2026", "September 2026", "October 2026", "November 2026", "December 2026", "January 2027", "February 2027", "March 2027", "April 2027", "May 2027", "June 2027", "July 2027"], key="att_mnth_sheet")
 
     st.divider()
 
-    class_att_students = [s for s in students if s.get("class_name") == att_class_sel]
+    active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
+    class_att_students = [s for s in active_students_list if s.get("class_name") == att_class_sel]
 
     col_info, col_btn = st.columns([4, 3])
     with col_info:
@@ -983,7 +1037,7 @@ elif menu_choice == "📅 Attendance Sheets":
                 use_container_width=True
             )
         else:
-            st.warning("No students found in this class.")
+            st.warning("No active students found in this class.")
 
     st.divider()
     if class_att_students:
