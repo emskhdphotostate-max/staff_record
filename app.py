@@ -856,6 +856,7 @@ elif menu_choice == "💳 Fee Management":
             
             st.write("")
             if selected_student_obj:
+                # FIXED: passed include_yearly=include_yearly_in_challan here!
                 challan_pdf_bytes = generate_fee_challan_pdf(selected_student_obj, ch_month, include_yearly=include_yearly_in_challan)
                 
                 if st.download_button(
@@ -895,7 +896,7 @@ elif menu_choice == "💳 Fee Management":
         report_month = rep_col1.text_input("Report Month & Year", value=datetime.now().strftime("%B %Y"), key="rep_month")
         report_class = rep_col2.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="rep_class")
         
-        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name") == report_class]
+        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name"] == report_class]
         
         st.write(f"Showing ledger preview for **{report_class}** ({len(target_students)} students):")
 
