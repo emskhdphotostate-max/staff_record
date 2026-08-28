@@ -831,21 +831,26 @@ elif menu_choice == "💳 Fee Management":
 
     with tab_challan:
         st.subheader("🖨️ Generate & Download Fee Challan (PDF)")
-        st.write("Select a student and billing month to generate an official fee voucher for parents. Generated challans will automatically appear in the tracking list below with date and time.")
+        st.write("Challan sirf un students ka generate ho sakta hai jinki monthly fee **'Paid'** mark ho chuki ho.")
         
         ch_c1, ch_c2, ch_c3 = st.columns([2, 2, 1])
         ch_class = ch_c1.selectbox("Filter Class for Challan", class_sequence, key="ch_class_sel")
+        ch_month = ch_c3.text_input("Month / Year", value=datetime.now().strftime("%B %Y"), key="ch_month_input")
         
-        class_filtered_students = [s for s in students if s.get("class_name") == ch_class and s.get("status", "Active") == "Active"]
+        # Filter only students whose monthly fee is Paid for this month
+        class_filtered_students = []
+        for s in students:
+            if s.get("class_name") == ch_class and s.get("status", "Active") == "Active":
+                m_stat, _ = get_fee_statuses(s["id"], ch_month)
+                if m_stat == "Paid":
+                    class_filtered_students.append(s)
         
         if not class_filtered_students:
-            st.warning(f"No active students found in {ch_class}.")
+            st.warning(f"No students with **Paid** monthly fee found in {ch_class} for {ch_month}. Pehlay 'Fee Collection & Records' tab se fee Paid mark karein.")
         else:
             student_options = {f"{s['name']} (ID: {s['id']})": s for s in class_filtered_students}
-            selected_ch_student_label = ch_c2.selectbox("Select Student", list(student_options.keys()), key="ch_std_sel")
+            selected_ch_student_label = ch_c2.selectbox("Select Student (Paid Only)", list(student_options.keys()), key="ch_std_sel")
             selected_student_obj = student_options[selected_ch_student_label]
-            
-            ch_month = ch_c3.text_input("Month / Year", value=datetime.now().strftime("%B %Y"), key="ch_month_input")
             
             include_yearly_in_challan = st.checkbox("Include Yearly Fee in this Challan Voucher", value=False)
             
