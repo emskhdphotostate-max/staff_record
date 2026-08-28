@@ -1016,7 +1016,7 @@ elif menu_choice == "📅 Attendance Sheets":
     st.divider()
 
     active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
-    class_att_students = [s for s in active_students_list if s.get("class_name"] == att_class_sel] # type: ignore
+    class_att_students = [s for s in active_students_list if s.get("class_name") == att_class_sel]
 
     col_info, col_btn = st.columns([4, 3])
     with col_info:
