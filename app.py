@@ -153,7 +153,7 @@ DEFAULT_CAMPUSES = [
 ]
 
 CLASS_SEQUENCE = [
-    "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", 
+    "Montessori", "LKG", "UKG", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", 
     "Class 6", "Class 7", "Class 8", "Class 9", "Matric"
 ]
 
@@ -707,12 +707,12 @@ elif menu_choice == "🎓 Student Admissions":
 
     with tab_promo:
         st.subheader("🚀 Annual Class Promotion & Session Upgrade")
-        st.info("Here you can run the annual promotion. **Class 8 will move to Class 9**, **Class 9 will move to Matric**, and **Matric students will automatically be marked as 'Graduated / Alumni'** (they will not be deleted, they will move to the Alumni section).")
+        st.info("Here you can run the annual promotion. **Montessori ➔ LKG ➔ UKG ➔ Class 1... Class 8 ➔ Class 9 ➔ Matric**, and **Matric students will automatically be marked as 'Graduated / Alumni'** (they will not be deleted, they will move to the Alumni section).")
 
         active_count = len([s for s in students if s.get("status", "Active") == "Active"])
         st.write(f"Total Active Students ready for promotion check: **{active_count}**")
 
-        if st.button("✨ Run Global Annual Promotion (Class 1-8 ➔ Next Class, Matric ➔ Alumni)", type="primary"):
+        if st.button("✨ Run Global Annual Promotion (Montessori to Matric Sequence, Matric ➔ Alumni)", type="primary"):
             try:
                 all_stds = fetch_students()
                 promoted_count = 0
@@ -726,7 +726,6 @@ elif menu_choice == "🎓 Student Admissions":
                     s_id = s.get("id")
 
                     if curr_cls == "Matric":
-                        # Mark as Graduated / Alumni
                         sb.table("students").update({"status": "Graduated"}).eq("id", s_id).execute()
                         graduated_count += 1
                     elif curr_cls in CLASS_SEQUENCE:
@@ -875,7 +874,7 @@ elif menu_choice == "💳 Fee Management":
         
         all_fee_recs = fetch_all_fee_records()
         filtered_student_ids = [s["id"] for s in fee_target_students]
-        total_collected = sum(int(r.get("amount") or 0) for r in all_fee_recs if r.get("student_id") in filtered_student_ids and r.get("month_year"] == fee_month_input)
+        total_collected = sum(int(r.get("amount") or 0) for r in all_fee_recs if r.get("student_id") in filtered_student_ids and r.get("month_year") == fee_month_input)
 
         m1, m2, m3, m4, m5 = st.columns(5)
         m1.metric("Total Students", tot_s)
@@ -1017,7 +1016,7 @@ elif menu_choice == "📅 Attendance Sheets":
     st.divider()
 
     active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
-    class_att_students = [s for s in active_students_list if s.get("class_name") == att_class_sel]
+    class_att_students = [s for s in active_students_list if s.get("class_name"] == att_class_sel] # type: ignore
 
     col_info, col_btn = st.columns([4, 3])
     with col_info:
