@@ -757,12 +757,10 @@ elif menu_choice == "🎓 Student Admissions":
                             st.warning("This class already exists.")
                         else:
                             try:
-                                # Try inserting into classes table if exists
                                 sb.table("classes").insert({"label": c_name}).execute()
                                 st.success(f"Class '{c_name}' added successfully!")
                                 st.rerun()
                             except Exception as e:
-                                # Fallback if table doesn't exist yet, try creating or note
                                 st.error(f"Error adding class in database table 'classes': {e}")
                     else:
                         st.warning("Please enter a class name.")
@@ -871,7 +869,7 @@ elif menu_choice == "💳 Fee Management":
             if fee_class_sel == "All Classes":
                 fee_target_students_pdf = active_students_list
             else:
-                fee_target_students_pdf = [s for s in active_students_list if s.get("class_name"] == fee_class_sel]
+                fee_target_students_pdf = [s for s in active_students_list if s.get("class_name") == fee_class_sel]
                 
             if fee_target_students_pdf:
                 comprehensive_pdf_bytes = generate_comprehensive_fee_pdf(fee_class_sel, fee_month_input, fee_target_students_pdf)
@@ -1059,7 +1057,7 @@ elif menu_choice == "📅 Attendance Sheets":
     st.divider()
 
     active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
-    class_att_students = [s for s in active_students_list if s.get("class_name"] == att_class_sel]
+    class_att_students = [s for s in active_students_list if s.get("class_name") == att_class_sel]
 
     col_info, col_btn = st.columns([4, 3])
     with col_info:
