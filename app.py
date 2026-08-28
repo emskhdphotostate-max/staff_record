@@ -299,6 +299,100 @@ def generate_monthly_attendance_pdf(class_name, month_year_str, students_list):
 
     return pdf.output(dest='S').encode('latin1')
 
+def generate_fee_challan_pdf(student, month_year, include_yearly=False):
+    pdf = FPDF(orientation='P', unit='mm', format='A5')
+    pdf.add_page()
+    
+    # Border box for Challan
+    pdf.set_draw_color(63, 43, 150)
+    pdf.set_line_width(0.8)
+    pdf.rect(5, 5, 138, 200)
+    
+    # School Header
+    pdf.set_font("Arial", "B", 13)
+    pdf.set_xy(10, 10)
+    pdf.cell(128, 6, "EXCELLENCE MODEL SCHOOL", 0, 1, "C")
+    pdf.set_font("Arial", "", 9)
+    pdf.cell(128, 5, "Fee Payment Challan / Voucher", 0, 1, "C")
+    
+    pdf.set_draw_color(200, 200, 200)
+    pdf.set_line_width(0.3)
+    pdf.line(10, 24, 133, 24)
+    
+    # Challan Meta Info
+    pdf.set_xy(10, 27)
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(30, 6, "Student ID:", 0, 0)
+    pdf.set_font("Arial", "", 9)
+    pdf.cell(40, 6, str(student.get("id", "")), 0, 0)
+    
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(25, 6, "Billing Month:", 0, 0)
+    pdf.set_font("Arial", "", 9)
+    pdf.cell(33, 6, str(month_year), 0, 1)
+    
+    pdf.set_xy(10, 34)
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(30, 6, "Student Name:", 0, 0)
+    pdf.set_font("Arial", "", 9)
+    pdf.cell(40, 6, str(student.get("name", "")), 0, 0)
+    
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(25, 6, "Class:", 0, 0)
+    pdf.set_font("Arial", "", 9)
+    pdf.cell(33, 6, str(student.get("class_name", "")), 0, 1)
+    
+    pdf.set_xy(10, 41)
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(30, 6, "Father's Name:", 0, 0)
+    pdf.set_font("Arial", "", 9)
+    pdf.cell(98, 6, str(student.get("father_name", "")), 0, 1)
+    
+    # Table of Fees
+    pdf.ln(4)
+    pdf.set_fill_color(63, 43, 150)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(90, 7, "  Fee Particulars", 1, 0, "L", True)
+    pdf.cell(33, 7, "Amount (Rs.)  ", 1, 1, "R", True)
+    
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Arial", "", 9)
+    
+    monthly_fee = int(student.get("monthly_fee", 3500) or 3500)
+    yearly_fee = int(student.get("yearly_fee", 5000) or 5000)
+    
+    pdf.cell(90, 7, f"   Monthly Tuition Fee ({month_year})", 1, 0, "L")
+    pdf.cell(33, 7, f"Rs. {monthly_fee:,}   ", 1, 1, "R")
+    
+    total_due = monthly_fee
+    if include_yearly:
+        pdf.cell(90, 7, "   Yearly Fee / Salana Charges", 1, 0, "L")
+        pdf.cell(33, 7, f"Rs. {yearly_fee:,}   ", 1, 1, "R")
+        total_due += yearly_fee
+        
+    pdf.set_font("Arial", "B", 9)
+    pdf.set_fill_color(230, 230, 250)
+    pdf.cell(90, 8, "   Total Payable Amount", 1, 0, "L", True)
+    pdf.cell(33, 8, f"Rs. {total_due:,}   ", 1, 1, "R", True)
+    
+    # Instructions & Signatures
+    pdf.ln(10)
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(123, 5, "Instructions:", 0, 1, "L")
+    pdf.set_font("Arial", "", 8)
+    pdf.cell(123, 4, "1. Please deposit fee before the 10th of every month.", 0, 1, "L")
+    pdf.cell(123, 4, "2. Fee once paid is non-refundable.", 0, 1, "L")
+    
+    pdf.ln(25)
+    pdf.cell(60, 5, "_________________________", 0, 0, "C")
+    pdf.cell(63, 5, "_________________________", 0, 1, "C")
+    pdf.set_font("Arial", "B", 8)
+    pdf.cell(60, 5, "Cashier / Accountant Sign", 0, 0, "C")
+    pdf.cell(63, 5, "Principal Signature", 0, 1, "C")
+    
+    return pdf.output(dest='S').encode('latin1')
+
 # ------------------------------------------------------------------
 # Data Fetches
 # ------------------------------------------------------------------
@@ -658,7 +752,7 @@ elif menu_choice == "💳 Fee Management":
     </div>
     """, unsafe_allow_html=True)
 
-    tab_rec, tab_rep = st.tabs(["💵 Fee Collection & Records", "📊 Collection Reports & Ledger"])
+    tab_rec, tab_challan, tab_rep = st.tabs(["💵 Fee Collection & Records", "🖨️ Fee Challan Generator", "📊 Collection Reports & Ledger"])
     
     with tab_rec:
         f_c1, f_c2 = st.columns(2)
@@ -708,6 +802,38 @@ elif menu_choice == "💳 Fee Management":
                         total_amt = (m_fee if m_stat=="Paid" else 0) + (y_fee if new_y=="Paid" else 0)
                         set_fee_status(s_id, target_month_fee, m_stat, new_y, total_amt)
                         st.rerun()
+
+    with tab_challan:
+        st.subheader("🖨️ Generate & Download Fee Challan (PDF)")
+        st.write("Select a student and billing month to generate an official fee voucher for parents.")
+        
+        ch_c1, ch_c2, ch_c3 = st.columns([2, 2, 1])
+        ch_class = ch_c1.selectbox("Filter Class for Challan", class_sequence, key="ch_class_sel")
+        
+        class_filtered_students = [s for s in students if s.get("class_name") == ch_class and s.get("status", "Active") == "Active"]
+        
+        if not class_filtered_students:
+            st.warning(f"No active students found in {ch_class}.")
+        else:
+            student_options = {f"{s['name']} (ID: {s['id']})": s for s in class_filtered_students}
+            selected_ch_student_label = ch_c2.selectbox("Select Student", list(student_options.keys()), key="ch_std_sel")
+            selected_student_obj = student_options[selected_ch_student_label]
+            
+            ch_month = ch_c3.text_input("Month / Year", value=datetime.now().strftime("%B %Y"), key="ch_month_input")
+            
+            include_yearly_in_challan = st.checkbox("Include Yearly Fee in this Challan Voucher", value=False)
+            
+            st.write("")
+            if selected_student_obj:
+                challan_pdf_bytes = generate_fee_challan_pdf(selected_student_obj, ch_month, include_yearly=include_yearly_in_challan)
+                st.download_button(
+                    label=f"📄 Download Fee Challan for {selected_student_obj['name']} (.PDF)",
+                    data=challan_pdf_bytes,
+                    file_name=f"Fee_Challan_{selected_student_obj['id']}_{ch_month.replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True
+                )
 
     with tab_rep:
         st.subheader("📊 Financial Collection Reports & Ledger Export")
