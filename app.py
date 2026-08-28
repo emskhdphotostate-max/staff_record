@@ -252,11 +252,11 @@ def set_fee_status(student_id, month_year, m_stat, y_stat, amount=0):
 
 def mark_challan_generated(student_id, month_year, include_yearly):
     existing = fetch_fee_record(student_id, month_year)
-    today = datetime.now().strftime("%Y-%m-%d")
+    current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if existing:
         sb.table("fee_records").update({
             "challan_generated": True,
-            "challan_date": today,
+            "challan_date": current_timestamp,
             "include_yearly_in_challan": include_yearly
         }).eq("id", existing["id"]).execute()
     else:
@@ -265,7 +265,7 @@ def mark_challan_generated(student_id, month_year, include_yearly):
             "month_year": month_year,
             "status": "Monthly:Pending | Yearly:Pending",
             "challan_generated": True,
-            "challan_date": today,
+            "challan_date": current_timestamp,
             "include_yearly_in_challan": include_yearly
         }).execute()
 
@@ -831,7 +831,7 @@ elif menu_choice == "💳 Fee Management":
 
     with tab_challan:
         st.subheader("🖨️ Generate & Download Fee Challan (PDF)")
-        st.write("Select a student and billing month to generate an official fee voucher for parents. Generated challans will automatically appear in the tracking list below.")
+        st.write("Select a student and billing month to generate an official fee voucher for parents. Generated challans will automatically appear in the tracking list below with date and time.")
         
         ch_c1, ch_c2, ch_c3 = st.columns([2, 2, 1])
         ch_class = ch_c1.selectbox("Filter Class for Challan", class_sequence, key="ch_class_sel")
@@ -853,7 +853,6 @@ elif menu_choice == "💳 Fee Management":
             if selected_student_obj:
                 challan_pdf_bytes = generate_fee_challan_pdf(selected_student_obj, ch_month, include_yearly=include_yearly_in_challan)
                 
-                # When download button is interacted with or clicked, mark challan as generated
                 if st.download_button(
                     label=f"📄 Download Fee Challan for {selected_student_obj['name']} (.PDF)",
                     data=challan_pdf_bytes,
@@ -881,7 +880,7 @@ elif menu_choice == "💳 Fee Management":
                     "Student Name": st_info.get("name", "Unknown"),
                     "Class": st_info.get("class_name", "—"),
                     "Yearly Fee Included": "Yes" if g.get("include_yearly_in_challan") else "No",
-                    "Generated Date": g.get("challan_date", "—")
+                    "Generated Date & Time": g.get("challan_date", "—")
                 })
             st.dataframe(pd.DataFrame(gen_df_data), use_container_width=True)
 
