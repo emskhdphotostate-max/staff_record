@@ -131,7 +131,7 @@ def check_password():
             st.write("")
             st.text_input("🔐 Enter System Password:", type="password", on_change=password_entered, key="password")
             if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-                st.error("😕 Incorrect password, please try again!")
+                st.error("⚠️ Incorrect password, please try again!")
         return False
     else:
         return True
@@ -393,7 +393,7 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     
     total_due = monthly_fee
     if include_yearly:
-        pdf.cell(90, 7, "   Yearly Fee / Salana Charges", 1, 0, "L")
+        pdf.cell(90, 7, "   Yearly Fee / Annual Charges", 1, 0, "L")
         pdf.cell(33, 7, f"Rs. {yearly_fee:,}   ", 1, 1, "R")
         total_due += yearly_fee
         
@@ -537,7 +537,7 @@ elif menu_choice == "👥 Staff Management":
                         "subject_teacher": subject_teacher.strip(),
                         "campus": campus,
                     }).execute()
-                    st.success(f"{name} added successfully.")
+                    st.success(f"Staff member {name} added successfully.")
                     st.rerun()
 
     f_col1, f_col2 = st.columns([4, 2])
@@ -589,7 +589,7 @@ elif menu_choice == "🎓 Student Admissions":
                 
             with sc2:
                 std_fee = st.number_input("Monthly Fee Amount (Rs.)", min_value=0, value=3500, step=500)
-                std_yearly_fee = st.number_input("Yearly Fee / Salana Fee (Rs.)", min_value=0, value=5000, step=500)
+                std_yearly_fee = st.number_input("Yearly Fee / Annual Charges (Rs.)", min_value=0, value=5000, step=500)
                 
             if st.form_submit_button("Register Student", type="primary"):
                 if std_name.strip() and std_father.strip():
@@ -831,7 +831,7 @@ elif menu_choice == "💳 Fee Management":
 
     with tab_challan:
         st.subheader("🖨️ Generate & Download Fee Challan (PDF)")
-        st.write("Challan sirf un students ka generate ho sakta hai jinki monthly fee **'Paid'** mark ho chuki ho.")
+        st.write("Challans can only be generated for students whose monthly fee is marked as **'Paid'**.")
         
         ch_c1, ch_c2, ch_c3 = st.columns([2, 2, 1])
         ch_class = ch_c1.selectbox("Filter Class for Challan", class_sequence, key="ch_class_sel")
@@ -846,7 +846,7 @@ elif menu_choice == "💳 Fee Management":
                     class_filtered_students.append(s)
         
         if not class_filtered_students:
-            st.warning(f"No students with **Paid** monthly fee found in {ch_class} for {ch_month}. Pehlay 'Fee Collection & Records' tab se fee Paid mark karein.")
+            st.warning(f"No students with **Paid** monthly fee found in {ch_class} for {ch_month}. Please mark the fee as Paid from the 'Fee Collection & Records' tab first.")
         else:
             student_options = {f"{s['name']} (ID: {s['id']})": s for s in class_filtered_students}
             selected_ch_student_label = ch_c2.selectbox("Select Student (Paid Only)", list(student_options.keys()), key="ch_std_sel")
@@ -856,7 +856,6 @@ elif menu_choice == "💳 Fee Management":
             
             st.write("")
             if selected_student_obj:
-                # FIXED: passed include_yearly=include_yearly_in_challan here!
                 challan_pdf_bytes = generate_fee_challan_pdf(selected_student_obj, ch_month, include_yearly=include_yearly_in_challan)
                 
                 if st.download_button(
