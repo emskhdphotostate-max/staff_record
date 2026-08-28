@@ -837,7 +837,6 @@ elif menu_choice == "💳 Fee Management":
         ch_class = ch_c1.selectbox("Filter Class for Challan", class_sequence, key="ch_class_sel")
         ch_month = ch_c3.text_input("Month / Year", value=datetime.now().strftime("%B %Y"), key="ch_month_input")
         
-        # Filter only students whose monthly fee is Paid for this month
         class_filtered_students = []
         for s in students:
             if s.get("class_name") == ch_class and s.get("status", "Active") == "Active":
@@ -895,9 +894,44 @@ elif menu_choice == "💳 Fee Management":
         report_month = rep_col1.text_input("Report Month & Year", value=datetime.now().strftime("%B %Y"), key="rep_month")
         report_class = rep_col2.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="rep_class")
         
-        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name") == report_class]
+        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name") == report_class and s.get("status", "Active") == "Active"]
         
         st.write(f"Showing ledger preview for **{report_class}** ({len(target_students)} students):")
+        
+        if not target_students:
+            st.info("No students found for this selection.")
+        else:
+            ledger_data = []
+            for s in target_students:
+                s_id = s["id"]
+                m_stat, y_stat = get_fee_statuses(s_id, report_month)
+                rec = fetch_fee_record(s_id, report_month)
+                
+                paid_amt = rec.get("amount", 0) if rec else 0
+                is_challan_gen = "Yes" if (rec and rec.get("challan_generated")) else "No"
+                
+                ledger_data.append({
+                    "Student ID": s_id,
+                    "Student Name": s.get("name"),
+                    "Father's Name": s.get("father_name", "—"),
+                    "Class": s.get("class_name"),
+                    "Monthly Fee Status": m_stat,
+                    "Yearly Fee Status": y_stat,
+                    "Challan Generated": is_challan_gen,
+                    "Total Paid (Rs.)": paid_amt
+                })
+            
+            df_ledger = pd.DataFrame(ledger_data)
+            st.dataframe(df_ledger, use_container_width=True)
+            
+            csv_ledger = df_ledger.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Download Financial Ledger as CSV",
+                data=csv_ledger,
+                file_name=f"Financial_Ledger_{report_class.replace(' ', '_')}_{report_month.replace(' ', '_')}.csv",
+                mime="text/csv",
+                type="primary"
+            )
 
 # ==================================================================
 # 5. ATTENDANCE SHEETS
