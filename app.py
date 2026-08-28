@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # Custom CSS for Professional Dashboard Theme
-st.markdown("""
+st.markdown('''
 <style>
     .stApp { background-color: #F4F5F8; }
     .block-container { padding-top: 1.5rem !important; }
@@ -80,7 +80,7 @@ st.markdown("""
         font-weight: 700;
     }
 </style>
-""", unsafe_allow_html=True)
+''', unsafe_allow_html=True)
 
 def get_logo_path():
     for filename in ["LOGO.png", "logo.png", "Logo.png"]:
@@ -119,13 +119,13 @@ def check_password():
             logo_html = f'<img src="data:image/png;base64,{logo_base64}" width="110" style="margin-bottom: 10px;" />' if logo_base64 else '<div style="font-size: 45px; margin-bottom: 10px;">🎓</div>'
             
             st.markdown(
-                f"""
+                f'''
                 <div style="background: linear-gradient(135deg, #3F2B96, #1A103C); padding: 35px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); text-align: center; color: white; margin-top: 30px;">
                     <div style="text-align: center;">{logo_html}</div>
                     <h1 style="margin: 15px 0 5px 0; font-size: 22px; font-weight: 800; color: #ffffff !important;">EXCELLENCE MODEL SCHOOL</h1>
                     <p style="margin: 0; font-size: 12px; color: #D4C5F9 !important;">Secure Enterprise Portal</p>
                 </div>
-                """,
+                ''',
                 unsafe_allow_html=True
             )
             st.write("")
@@ -472,12 +472,12 @@ menu_choice = st.session_state.get("selected_menu", "📊 Dashboard Overview")
 # 1. DASHBOARD OVERVIEW
 # ==================================================================
 if menu_choice == "📊 Dashboard Overview":
-    st.markdown("""
+    st.markdown('''
     <div class="dashboard-header">
         <h1>Dashboard & Quick Statistics</h1>
         <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Real-time summary of school operations and cloud metrics</p>
     </div>
-    """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
 
     active_students = [s for s in students if s.get("status", "Active") == "Active"]
     alumni_students = [s for s in students if s.get("status") == "Graduated"]
@@ -507,12 +507,12 @@ if menu_choice == "📊 Dashboard Overview":
 # 2. STAFF MANAGEMENT
 # ==================================================================
 elif menu_choice == "👥 Staff Management":
-    st.markdown("""
+    st.markdown('''
     <div class="dashboard-header">
         <h1>Staff Management & Directory</h1>
         <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Manage faculty, designations, campuses and employee records</p>
     </div>
-    """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
 
     with st.expander("➕ Add New Staff Member", expanded=False):
         with st.form("add_staff_form", clear_on_submit=True):
@@ -558,7 +558,8 @@ elif menu_choice == "👥 Staff Management":
     for s in filtered_staff:
         with st.container(border=True):
             c1, c2, c3 = st.columns([3, 5, 1])
-            c1.markdown(f"**{s['name']}** \n`{s.get('id')}`")
+            c1.markdown(f"**{s['name']}** 
+`{s.get('id')}`")
             c2.markdown(f"<span class='ems-badge'>{s.get('designation','')}</span> | Father: {s.get('father_name','—')} | Campus: {s.get('campus','—')}", unsafe_allow_html=True)
             if c3.button("Delete", key=f"del_staff_{s['id']}"):
                 sb.table("staff").delete().eq("id", s["id"]).execute()
@@ -568,12 +569,12 @@ elif menu_choice == "👥 Staff Management":
 # 3. STUDENT ADMISSIONS
 # ==================================================================
 elif menu_choice == "🎓 Student Admissions":
-    st.markdown("""
+    st.markdown('''
     <div class="dashboard-header">
         <h1>Student Admissions & Class Records</h1>
         <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Register students, manage fees, CSV import/export, and annual class promotions</p>
     </div>
-    """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
     
     tab_single, tab_bulk, tab_promo, tab_classes = st.tabs(["➕ Single Admission", "📥 CSV / Excel Import & Export", "🚀 Annual Class Promotion", "🏫 Manage Classes"])
     
@@ -771,12 +772,12 @@ elif menu_choice == "🎓 Student Admissions":
 # 4. FEE MANAGEMENT
 # ==================================================================
 elif menu_choice == "💳 Fee Management":
-    st.markdown("""
+    st.markdown('''
     <div class="dashboard-header">
         <h1>Fee Management & Ledgers</h1>
         <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Manage student dues, fee payments, and financial collection reports</p>
     </div>
-    """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
 
     tab_rec, tab_challan, tab_rep = st.tabs(["💵 Fee Collection & Records", "🖨️ Fee Challan Generator", "📊 Collection Reports & Ledger"])
     
@@ -890,26 +891,49 @@ elif menu_choice == "💳 Fee Management":
 
     with tab_rep:
         st.subheader("📊 Financial Collection Reports & Ledger Export")
-        rep_col1, rep_col2 = st.columns(2)
+        rep_col1, rep_col2, rep_col3 = st.columns(3)
         report_month = rep_col1.text_input("Report Month & Year", value=datetime.now().strftime("%B %Y"), key="rep_month")
         report_class = rep_col2.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="rep_class")
         
+        filter_by_date = rep_col3.checkbox("Filter by Specific Paid Date?", value=False)
+        target_date_str = None
+        if filter_by_date:
+            target_date = rep_col3.date_input("Select Date", datetime.now())
+            target_date_str = target_date.strftime("%Y-%m-%d")
+            
         target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name") == report_class and s.get("status", "Active") == "Active"]
-        
-        st.write(f"Showing ledger preview for **{report_class}** ({len(target_students)} students):")
         
         if not target_students:
             st.info("No students found for this selection.")
         else:
             ledger_data = []
+            total_expected = 0
+            total_collected = 0
+            total_collected_on_date = 0
+            total_remaining = 0
+            
             for s in target_students:
                 s_id = s["id"]
+                m_fee = int(s.get("monthly_fee") or 3500)
+                y_fee = int(s.get("yearly_fee") or 5000)
+                
                 m_stat, y_stat = get_fee_statuses(s_id, report_month)
                 rec = fetch_fee_record(s_id, report_month)
                 
                 paid_amt = rec.get("amount", 0) if rec else 0
+                paid_date = rec.get("paid_date", "") if rec else ""
                 is_challan_gen = "Yes" if (rec and rec.get("challan_generated")) else "No"
                 
+                if m_stat == "Pending":
+                    total_remaining += m_fee
+                if y_stat == "Pending":
+                    total_remaining += y_fee
+                    
+                total_collected += paid_amt
+                
+                if target_date_str and paid_date == target_date_str:
+                    total_collected_on_date += paid_amt
+                    
                 ledger_data.append({
                     "Student ID": s_id,
                     "Student Name": s.get("name"),
@@ -918,10 +942,35 @@ elif menu_choice == "💳 Fee Management":
                     "Monthly Fee Status": m_stat,
                     "Yearly Fee Status": y_stat,
                     "Challan Generated": is_challan_gen,
-                    "Total Paid (Rs.)": paid_amt
+                    "Total Paid (Rs.)": paid_amt,
+                    "Paid Date": paid_date
                 })
             
-            df_ledger = pd.DataFrame(ledger_data)
+            total_expected = total_collected + total_remaining
+            
+            # --- Metrics Dashboard ---
+            st.markdown("### 💰 Collection Overview")
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Total Expected", f"Rs. {total_expected:,}")
+            m2.metric(f"Total Collected ({report_month})", f"Rs. {total_collected:,}")
+            m3.metric("Total Remaining", f"Rs. {total_remaining:,}")
+            
+            if target_date_str:
+                m4.metric(f"Collected on {target_date_str}", f"Rs. {total_collected_on_date:,}")
+            else:
+                m4.metric("Today's Collection Filter", "Not Active")
+            
+            st.divider()
+            
+            # --- Table Data ---
+            if target_date_str:
+                display_data = [d for d in ledger_data if d["Paid Date"] == target_date_str]
+                st.write(f"Showing filtered ledger for **{report_class}** on **{target_date_str}** ({len(display_data)} records):")
+            else:
+                display_data = ledger_data
+                st.write(f"Showing complete ledger preview for **{report_class}** ({len(display_data)} students):")
+            
+            df_ledger = pd.DataFrame(display_data)
             st.dataframe(df_ledger, use_container_width=True)
             
             csv_ledger = df_ledger.to_csv(index=False).encode('utf-8')
@@ -937,12 +986,12 @@ elif menu_choice == "💳 Fee Management":
 # 5. ATTENDANCE SHEETS
 # ==================================================================
 elif menu_choice == "📅 Attendance Sheets":
-    st.markdown("""
+    st.markdown('''
     <div class="dashboard-header">
         <h1>Monthly Attendance Sheets</h1>
         <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Generate and print monthly attendance registers for any class</p>
     </div>
-    """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
 
     att_c1, att_c2 = st.columns(2)
     selected_att_class = att_c1.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="att_class_select")
@@ -964,7 +1013,7 @@ elif menu_choice == "📅 Attendance Sheets":
             type="primary"
         )
             
-        table_html = f"""
+        table_html = f'''
         <div style="background: white; padding: 20px; border-radius: 10px; border: 1px solid #E0D8F0; overflow-x: auto;">
             <h3 style="text-align: center; margin-bottom: 5px;">Excellence Model School - Monthly Attendance Sheet</h3>
             <p style="text-align: center; color: #666; margin-top: 0;">Class: <b>{selected_att_class}</b> | Month: <b>{att_month}</b></p>
@@ -973,18 +1022,18 @@ elif menu_choice == "📅 Attendance Sheets":
                     <tr style="background-color: #3F2B96; color: white;">
                         <th style="border: 1px solid #ccc; padding: 6px; width: 80px;">Roll No</th>
                         <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Student Name</th>
-        """
+        '''
         for d in range(1, 32):
             table_html += f'<th style="border: 1px solid #ccc; padding: 4px; width: 22px; text-align: center;">{d}</th>'
         table_html += "</tr></thead><tbody>"
 
         for s in att_students:
             s_name = clean_student_name(s.get("name", ""))
-            table_html += f"""
+            table_html += f'''
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 5px; text-align: center; font-weight: bold;">{s.get("id")}</td>
                     <td style="border: 1px solid #ccc; padding: 5px;">{s_name}</td>
-            """
+            '''
             for d in range(1, 32):
                 table_html += '<td style="border: 1px solid #ccc; padding: 5px;"></td>'
             table_html += "</tr>"
