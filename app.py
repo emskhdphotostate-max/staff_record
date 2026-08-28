@@ -211,9 +211,6 @@ def add_student(record):
         record["status"] = "Active"
     sb.table("students").insert(record).execute()
 
-def delete_student(std_id):
-    sb.table("students").delete().eq("id", std_id).execute()
-
 def fetch_fee_record(student_id, month_year):
     res = sb.table("fee_records").select("*").eq("student_id", student_id).eq("month_year", month_year).execute()
     return res.data[0] if res.data else None
@@ -739,14 +736,15 @@ elif menu_choice == "📅 Attendance Sheets":
     if not att_students:
         st.info("No students found for attendance sheet generation.")
     else:
-        if st.button("📄 Download Monthly Attendance PDF", type="primary"):
-            att_pdf_bytes = generate_monthly_attendance_pdf(selected_att_class, att_month, att_students)
-            st.download_button(
-                "📥 Click Here to Download PDF Attendance Sheet",
-                data=att_pdf_bytes,
-                file_name=f"attendance_{selected_att_class.replace(' ', '_')}.pdf",
-                mime="application/pdf"
-            )
+        # Directly generate and offer download button without requiring extra clicks
+        att_pdf_bytes = generate_monthly_attendance_pdf(selected_att_class, att_month, att_students)
+        st.download_button(
+            "📥 Click Here to Download PDF Attendance Sheet",
+            data=att_pdf_bytes,
+            file_name=f"attendance_{selected_att_class.replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            type="primary"
+        )
             
         table_html = f"""
         <div style="background: white; padding: 20px; border-radius: 10px; border: 1px solid #E0D8F0; overflow-x: auto;">
