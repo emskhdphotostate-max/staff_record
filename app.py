@@ -250,6 +250,32 @@ def set_fee_status(student_id, month_year, m_stat, y_stat, amount=0):
             "amount": amount
         }).execute()
 
+def mark_challan_generated(student_id, month_year, include_yearly):
+    existing = fetch_fee_record(student_id, month_year)
+    today = datetime.now().strftime("%Y-%m-%d")
+    if existing:
+        sb.table("fee_records").update({
+            "challan_generated": True,
+            "challan_date": today,
+            "include_yearly_in_challan": include_yearly
+        }).eq("id", existing["id"]).execute()
+    else:
+        sb.table("fee_records").insert({
+            "student_id": student_id,
+            "month_year": month_year,
+            "status": "Monthly:Pending | Yearly:Pending",
+            "challan_generated": True,
+            "challan_date": today,
+            "include_yearly_in_challan": include_yearly
+        }).execute()
+
+def fetch_generated_challans(month_year):
+    try:
+        res = sb.table("fee_records").select("*").eq("month_year", month_year).eq("challan_generated", True).execute()
+        return res.data or []
+    except Exception:
+        return []
+
 # ------------------------------------------------------------------
 # PDF Functions
 # ------------------------------------------------------------------
@@ -805,7 +831,7 @@ elif menu_choice == "💳 Fee Management":
 
     with tab_challan:
         st.subheader("🖨️ Generate & Download Fee Challan (PDF)")
-        st.write("Select a student and billing month to generate an official fee voucher for parents.")
+        st.write("Select a student and billing month to generate an official fee voucher for parents. Generated challans will automatically appear in the tracking list below.")
         
         ch_c1, ch_c2, ch_c3 = st.columns([2, 2, 1])
         ch_class = ch_c1.selectbox("Filter Class for Challan", class_sequence, key="ch_class_sel")
@@ -826,14 +852,38 @@ elif menu_choice == "💳 Fee Management":
             st.write("")
             if selected_student_obj:
                 challan_pdf_bytes = generate_fee_challan_pdf(selected_student_obj, ch_month, include_yearly=include_yearly_in_challan)
-                st.download_button(
+                
+                # When download button is interacted with or clicked, mark challan as generated
+                if st.download_button(
                     label=f"📄 Download Fee Challan for {selected_student_obj['name']} (.PDF)",
                     data=challan_pdf_bytes,
                     file_name=f"Fee_Challan_{selected_student_obj['id']}_{ch_month.replace(' ', '_')}.pdf",
                     mime="application/pdf",
                     type="primary",
                     use_container_width=True
-                )
+                ):
+                    mark_challan_generated(selected_student_obj['id'], ch_month, include_yearly_in_challan)
+
+        st.divider()
+        st.subheader(f"📋 Challans Generated for: {ch_month}")
+        generated_list = fetch_generated_challans(ch_month)
+        
+        if not generated_list:
+            st.info(f"No challans generated yet for {ch_month}.")
+        else:
+            gen_df_data = []
+            student_map = {s["id"]: s for s in students}
+            for g in generated_list:
+                sid = g.get("student_id")
+                st_info = student_map.get(sid, {})
+                gen_df_data.append({
+                    "Student ID": sid,
+                    "Student Name": st_info.get("name", "Unknown"),
+                    "Class": st_info.get("class_name", "—"),
+                    "Yearly Fee Included": "Yes" if g.get("include_yearly_in_challan") else "No",
+                    "Generated Date": g.get("challan_date", "—")
+                })
+            st.dataframe(pd.DataFrame(gen_df_data), use_container_width=True)
 
     with tab_rep:
         st.subheader("📊 Financial Collection Reports & Ledger Export")
@@ -841,7 +891,7 @@ elif menu_choice == "💳 Fee Management":
         report_month = rep_col1.text_input("Report Month & Year", value=datetime.now().strftime("%B %Y"), key="rep_month")
         report_class = rep_col2.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="rep_class")
         
-        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name") == report_class]
+        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name"] == report_class]
         
         st.write(f"Showing ledger preview for **{report_class}** ({len(target_students)} students):")
 
