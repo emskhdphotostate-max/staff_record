@@ -633,8 +633,10 @@ elif menu_choice == "🎓 Student Admissions":
         col_ex1, col_ex2 = st.columns(2)
         with col_ex1:
             if students:
-                df_export = pd.DataFrame(students)[["id", "name", "father_name", "class_name", "monthly_fee", "yearly_fee", "status"]]
-                csv_data = df_export.to_csv(index=False).encode('utf-8')
+                df_export = pd.DataFrame(students)
+                expected_cols = ["id", "name", "father_name", "class_name", "monthly_fee", "yearly_fee", "status"]
+                existing_cols = [c for c in expected_cols if c in df_export.columns]
+                csv_data = df_export[existing_cols].to_csv(index=False).encode('utf-8')
                 st.download_button(
                     "📥 Download Existing Students (CSV)",
                     data=csv_data,
