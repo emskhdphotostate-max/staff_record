@@ -558,7 +558,7 @@ elif menu_choice == "👥 Staff Management":
     for s in filtered_staff:
         with st.container(border=True):
             c1, c2, c3 = st.columns([3, 5, 1])
-            c1.markdown(f"**{s['name']}** 
+            c1.markdown(f"**{s['name']}**") 
 `{s.get('id')}`")
             c2.markdown(f"<span class='ems-badge'>{s.get('designation','')}</span> | Father: {s.get('father_name','—')} | Campus: {s.get('campus','—')}", unsafe_allow_html=True)
             if c3.button("Delete", key=f"del_staff_{s['id']}"):
