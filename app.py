@@ -595,11 +595,22 @@ elif menu_choice == "🎓 Student Admissions":
             
             address = st.text_area("Residential Address *")
             prev_school = st.text_input("Previous School / Last Attended Class (if any)")
+            
+            # Student Photograph Upload
+            std_photo = st.file_uploader("Upload Student Photograph (JPG/PNG)", type=["jpg", "jpeg", "png"])
                 
             if st.form_submit_button("Register Student", type="primary"):
                 if std_name.strip() and std_father.strip() and contact_1.strip() and whatsapp_no.strip() and address.strip():
                     try:
                         new_s_id = next_student_id(students)
+                        
+                        # Process Photo if uploaded
+                        photo_url_val = ""
+                        if std_photo is not None:
+                            bytes_data = std_photo.getvalue()
+                            encoded_img = base64.b64encode(bytes_data).decode('utf-8')
+                            photo_url_val = f"data:image/{std_photo.type.split('/')[-1]};base64,{encoded_img}"
+
                         student_data = {
                             "id": new_s_id,
                             "name": std_name.strip(),
@@ -616,7 +627,8 @@ elif menu_choice == "🎓 Student Admissions":
                             "gender": std_gender,
                             "b_form": std_bform.strip(),
                             "blood_group": blood_group,
-                            "previous_school": prev_school.strip()
+                            "previous_school": prev_school.strip(),
+                            "photo_url": photo_url_val
                         }
                         add_student(student_data)
                         st.success(f"Student {std_name} ({new_s_id}) successfully enrolled in {std_class}!")
@@ -716,7 +728,8 @@ elif menu_choice == "🎓 Student Admissions":
                             "gender": str(row.get("gender", "Male")).strip(),
                             "b_form": str(row.get("b_form", "")).strip(),
                             "blood_group": str(row.get("blood_group", "Unknown")).strip(),
-                            "previous_school": str(row.get("previous_school", "")).strip()
+                            "previous_school": str(row.get("previous_school", "")).strip(),
+                            "photo_url": ""
                         }).execute()
                         success_count += 1
                         
@@ -1035,7 +1048,7 @@ elif menu_choice == "📅 Attendance Sheets":
     if not att_students:
         st.info("No students found for attendance sheet generation.")
     else:
-        att_pdf_bytes = generate_monthly_attendance_pdf(selected_att_class, att_month, att_students)
+        att_pdf_bytes = generate_monthly_attendance_pdf(selected_att_class,att_month, att_students)
         st.download_button(
             "📥 Click Here to Download PDF Attendance Sheet",
             data=att_pdf_bytes,
