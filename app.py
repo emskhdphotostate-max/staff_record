@@ -681,7 +681,6 @@ elif menu_choice == "🎓 Student Admissions":
                     e_name = st.text_input("Student Full Name *", value=sel_s.get("name", ""))
                     e_father = st.text_input("Father's Name *", value=sel_s.get("father_name", ""))
                     
-                    # Class selection index safely
                     curr_cls = sel_s.get("class_name", class_sequence[0] if class_sequence else "")
                     cls_idx = class_sequence.index(curr_cls) if curr_cls in class_sequence else 0
                     e_class = st.selectbox("Assign Class", class_sequence, index=cls_idx)
@@ -707,7 +706,6 @@ elif menu_choice == "🎓 Student Admissions":
                 e_address = st.text_area("Residential Address *", value=sel_s.get("address", ""))
                 e_prev_school = st.text_input("Previous School / Last Attended Class", value=sel_s.get("previous_school", ""))
                 
-                # New Picture uploader for update
                 new_uploaded_photo = st.file_uploader("Upload New Student Photograph (JPG/PNG) - Leave empty to keep existing", type=["jpg", "jpeg", "png"])
                 
                 if st.form_submit_button("Update Student Record", type="primary"):
@@ -719,20 +717,20 @@ elif menu_choice == "🎓 Student Admissions":
                             final_photo_url = f"data:image/{new_uploaded_photo.type.split('/')[-1]};base64,{enc_img}"
                         
                         updated_payload = {
-                            "name": e_name.strip(),
-                            "father_name": e_father.strip(),
+                            "name": str(e_name).strip() if e_name else "",
+                            "father_name": str(e_father).strip() if e_father else "",
                             "class_name": e_class,
                             "monthly_fee": e_fee,
                             "yearly_fee": e_yearly_fee,
-                            "contact_1": e_contact1.strip(),
-                            "contact_2": e_contact2.strip(),
-                            "whatsapp": e_whatsapp.strip(),
-                            "address": e_address.strip(),
-                            "dob": e_dob.strip(),
+                            "contact_1": str(e_contact1).strip() if e_contact1 else "",
+                            "contact_2": str(e_contact2).strip() if e_contact2 else "",
+                            "whatsapp": str(e_whatsapp).strip() if e_whatsapp else "",
+                            "address": str(e_address).strip() if e_address else "",
+                            "dob": str(e_dob).strip() if e_dob else "",
                             "gender": e_gender,
-                            "b_form": e_bform.strip(),
+                            "b_form": str(e_bform).strip() if e_bform else "",
                             "blood_group": e_blood,
-                            "previous_school": e_prev_school.strip(),
+                            "previous_school": str(e_prev_school).strip() if e_prev_school else "",
                             "photo_url": final_photo_url
                         }
                         update_student(sel_s["id"], updated_payload)
