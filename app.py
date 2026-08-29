@@ -423,6 +423,7 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
 
 def generate_id_cards_pdf(students_list):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
+    logo_path = get_logo_path()
     
     for i, s in enumerate(students_list):
         if i % 2 == 0:
@@ -433,82 +434,98 @@ def generate_id_cards_pdf(students_list):
             
         x_start = 30
         
+        # Outer Card Border
         pdf.set_draw_color(63, 43, 150)
         pdf.set_line_width(0.8)
         pdf.rect(x_start, y_start, 150, 88)
         
+        # Header Banner Background
         pdf.set_fill_color(63, 43, 150)
-        pdf.rect(x_start, y_start, 150, 18, 'F')
+        pdf.rect(x_start, y_start, 150, 20, 'F')
         
+        # Insert Logo if available on ID Card Header
+        if logo_path and os.path.exists(logo_path):
+            try:
+                pdf.image(logo_path, x=x_start + 8, y=y_start + 2.5, w=15)
+            except Exception:
+                pass
+        
+        # Header Centered Text
         pdf.set_xy(x_start, y_start + 3)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Arial", "B", 12)
         pdf.cell(150, 6, safe_text("EXCELLENCE MODEL SCHOOL"), 0, 1, "C")
         pdf.set_font("Arial", "", 8)
+        pdf.set_xy(x_start, y_start + 10)
         pdf.cell(150, 4, safe_text("STUDENT IDENTITY CARD"), 0, 1, "C")
         
         pdf.set_text_color(0, 0, 0)
         
+        # Student Photo Box
         pdf.set_draw_color(150, 150, 150)
         pdf.set_line_width(0.4)
-        pdf.rect(x_start + 10, y_start + 22, 28, 35)
+        pdf.rect(x_start + 10, y_start + 24, 28, 35)
         
         p_url = s.get("photo_url", "")
         if not p_url:
-            pdf.set_xy(x_start + 10, y_start + 35)
+            pdf.set_xy(x_start + 10, y_start + 38)
             pdf.set_font("Arial", "", 8)
             pdf.cell(28, 5, safe_text("NO PHOTO"), 0, 0, "C")
             
-        pdf.set_xy(x_start + 42, y_start + 23)
+        # Student Details Layout
+        pdf.set_xy(x_start + 42, y_start + 24)
         pdf.set_font("Arial", "B", 9)
-        pdf.cell(22, 6, safe_text("GR No:"), 0, 0)
+        pdf.cell(25, 6, safe_text("GR No:"), 0, 0)
         pdf.set_font("Arial", "", 9)
-        pdf.cell(60, 6, safe_text(str(s.get("gr_number", "—"))), 0, 1)
+        pdf.cell(75, 6, safe_text(str(s.get("gr_number", "—"))), 0, 1)
         
-        pdf.set_xy(x_start + 42, y_start + 30)
+        pdf.set_xy(x_start + 42, y_start + 31)
         pdf.set_font("Arial", "B", 9)
-        pdf.cell(22, 6, safe_text("Student ID:"), 0, 0)
+        pdf.cell(25, 6, safe_text("Student ID:"), 0, 0)
         pdf.set_font("Arial", "", 9)
-        pdf.cell(60, 6, safe_text(str(s.get("id", ""))), 0, 1)
+        pdf.cell(75, 6, safe_text(str(s.get("id", ""))), 0, 1)
         
-        pdf.set_xy(x_start + 42, y_start + 37)
+        pdf.set_xy(x_start + 42, y_start + 38)
         pdf.set_font("Arial", "B", 9)
-        pdf.cell(22, 6, safe_text("Name:"), 0, 0)
+        pdf.cell(25, 6, safe_text("Name:"), 0, 0)
         pdf.set_font("Arial", "", 9)
-        pdf.cell(85, 6, safe_text(str(s.get("name", ""))), 0, 1)
+        pdf.cell(75, 6, safe_text(str(s.get("name", ""))), 0, 1)
         
-        pdf.set_xy(x_start + 42, y_start + 44)
+        pdf.set_xy(x_start + 42, y_start + 45)
         pdf.set_font("Arial", "B", 9)
-        pdf.cell(22, 6, safe_text("Father Name:"), 0, 0)
+        pdf.cell(25, 6, safe_text("Father Name:"), 0, 0)
         pdf.set_font("Arial", "", 9)
-        pdf.cell(85, 6, safe_text(str(s.get("father_name", ""))), 0, 1)
+        pdf.cell(75, 6, safe_text(str(s.get("father_name", ""))), 0, 1)
         
-        pdf.set_xy(x_start + 42, y_start + 51)
+        pdf.set_xy(x_start + 42, y_start + 52)
         pdf.set_font("Arial", "B", 9)
-        pdf.cell(22, 6, safe_text("Class:"), 0, 0)
+        pdf.cell(25, 6, safe_text("Class:"), 0, 0)
         pdf.set_font("Arial", "", 9)
-        pdf.cell(85, 6, safe_text(str(s.get("class_name", ""))), 0, 1)
+        pdf.cell(75, 6, safe_text(str(s.get("class_name", ""))), 0, 1)
         
-        pdf.set_xy(x_start + 10, y_start + 62)
+        # Emergency & Blood Group Row
+        pdf.set_xy(x_start + 10, y_start + 63)
         pdf.set_font("Arial", "B", 8)
         pdf.cell(25, 5, safe_text("Emergency No:"), 0, 0)
         pdf.set_font("Arial", "", 8)
-        pdf.cell(50, 5, safe_text(str(s.get("contact_1", "—"))), 0, 0)
+        pdf.cell(48, 5, safe_text(str(s.get("contact_1", "—"))), 0, 0)
         
         pdf.set_font("Arial", "B", 8)
-        pdf.cell(18, 5, safe_text("Blood Grp:"), 0, 0)
+        pdf.cell(22, 5, safe_text("Blood Grp:"), 0, 0)
         pdf.set_font("Arial", "", 8)
-        pdf.cell(30, 5, safe_text(str(s.get("blood_group", "—"))), 0, 1)
+        pdf.cell(25, 5, safe_text(str(s.get("blood_group", "—"))), 0, 1)
         
-        pdf.line(x_start + 10, y_start + 78, x_start + 50, y_start + 78)
-        pdf.line(x_start + 110, y_start + 78, x_start + 140, y_start + 78)
+        # Perfectly Balanced & Centered Signature Section
+        line_y = y_start + 78
+        pdf.line(x_start + 15, line_y, x_start + 65, line_y)
+        pdf.line(x_start + 85, line_y, x_start + 135, line_y)
         
-        pdf.set_xy(x_start + 10, y_start + 79)
+        pdf.set_xy(x_start + 15, line_y + 1)
         pdf.set_font("Arial", "B", 7)
-        pdf.cell(40, 4, safe_text("Issued By Authority"), 0, 0, "L")
+        pdf.cell(50, 4, safe_text("Issued By Authority"), 0, 0, "C")
         
-        pdf.set_xy(x_start + 105, y_start + 79)
-        pdf.cell(35, 4, safe_text("Principal Sign"), 0, 1, "R")
+        pdf.set_xy(x_start + 85, line_y + 1)
+        pdf.cell(50, 4, safe_text("Principal Signature"), 0, 1, "C")
         
     return pdf.output(dest='S').encode('latin1')
 
