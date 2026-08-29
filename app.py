@@ -279,7 +279,7 @@ def fetch_generated_challans(month_year):
         return []
 
 # ------------------------------------------------------------------
-# PDF Functions
+# PDF Functions (Including ID Card Generator)
 # ------------------------------------------------------------------
 def generate_staff_pdf(data_rows, custom_fields_list):
     pdf = FPDF()
@@ -414,6 +414,104 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     pdf.cell(60, 5, "Cashier / Accountant Sign", 0, 0, "C")
     pdf.cell(63, 5, "Principal Signature", 0, 1, "C")
     
+    return pdf.output(dest='S').encode('latin1')
+
+def generate_id_cards_pdf(students_list):
+    pdf = FPDF(orientation='P', unit='mm', format='A4')
+    
+    for i, s in enumerate(students_list):
+        if i % 2 == 0:
+            pdf.add_page()
+            y_start = 15
+        else:
+            y_start = 110
+            
+        x_start = 30
+        
+        # Draw ID Card outer border (Credit card / Standard ID size approx 85mm x 90mm)
+        pdf.set_draw_color(63, 43, 150)
+        pdf.set_line_width(0.8)
+        pdf.rect(x_start, y_start, 150, 88)
+        
+        # Header banner inside ID Card
+        pdf.set_fill_color(63, 43, 150)
+        pdf.rect(x_start, y_start, 150, 18, 'F')
+        
+        pdf.set_xy(x_start, y_start + 3)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(150, 6, "EXCELLENCE MODEL SCHOOL", 0, 1, "C")
+        pdf.set_font("Arial", "", 8)
+        pdf.cell(150, 4, "STUDENT IDENTITY CARD", 0, 1, "C")
+        
+        # Reset text color
+        pdf.set_text_color(0, 0, 0)
+        
+        # Student Photo Placeholder box
+        pdf.set_draw_color(150, 150, 150)
+        pdf.set_line_width(0.4)
+        pdf.rect(x_start + 10, y_start + 22, 28, 35)
+        
+        p_url = s.get("photo_url", "")
+        if not p_url:
+            pdf.set_xy(x_start + 10, y_start + 35)
+            pdf.set_font("Arial", "", 8)
+            pdf.cell(28, 5, "NO PHOTO", 0, 0, "C")
+            
+        # Student Details text
+        pdf.set_xy(x_start + 42, y_start + 23)
+        pdf.set_font("Arial", "B", 9)
+        pdf.cell(22, 6, "GR No:", 0, 0)
+        pdf.set_font("Arial", "", 9)
+        pdf.cell(60, 6, str(s.get("gr_number", "—")), 0, 1)
+        
+        pdf.set_xy(x_start + 42, y_start + 30)
+        pdf.set_font("Arial", "B", 9)
+        pdf.cell(22, 6, "Student ID:", 0, 0)
+        pdf.set_font("Arial", "", 9)
+        pdf.cell(60, 6, str(s.get("id", "")), 0, 1)
+        
+        pdf.set_xy(x_start + 42, y_start + 37)
+        pdf.set_font("Arial", "B", 9)
+        pdf.cell(22, 6, "Name:", 0, 0)
+        pdf.set_font("Arial", "", 9)
+        pdf.cell(85, 6, str(s.get("name", "")), 0, 1)
+        
+        pdf.set_xy(x_start + 42, y_start + 44)
+        pdf.set_font("Arial", "B", 9)
+        pdf.cell(22, 6, "Father Name:", 0, 0)
+        pdf.set_font("Arial", "", 9)
+        pdf.cell(85, 6, str(s.get("father_name", "")), 0, 1)
+        
+        pdf.set_xy(x_start + 42, y_start + 51)
+        pdf.set_font("Arial", "B", 9)
+        pdf.cell(22, 6, "Class:", 0, 0)
+        pdf.set_font("Arial", "", 9)
+        pdf.cell(85, 6, str(s.get("class_name", "")), 0, 1)
+        
+        # Bottom details line
+        pdf.set_xy(x_start + 10, y_start + 62)
+        pdf.set_font("Arial", "B", 8)
+        pdf.cell(25, 5, "Emergency No:", 0, 0)
+        pdf.set_font("Arial", "", 8)
+        pdf.cell(50, 5, str(s.get("contact_1", "—")), 0, 0)
+        
+        pdf.set_font("Arial", "B", 8)
+        pdf.cell(18, 5, "Blood Grp:", 0, 0)
+        pdf.set_font("Arial", "", 8)
+        pdf.cell(30, 5, str(s.get("blood_group", "—")), 0, 1)
+        
+        # Footer sign line
+        pdf.line(x_start + 10, y_start + 78, x_start + 50, y_start + 78)
+        pdf.line(x_start + 110, y_start + 78, x_start + 140, y_start + 78)
+        
+        pdf.set_xy(x_start + 10, y_start + 79)
+        pdf.set_font("Arial", "B", 7)
+        pdf.cell(40, 4, "Issued By Authority", 0, 0, "L")
+        
+        pdf.set_xy(x_start + 105, y_start + 79)
+        pdf.cell(35, 4, "Principal Sign", 0, 1, "R")
+        
     return pdf.output(dest='S').encode('latin1')
 
 # ------------------------------------------------------------------
@@ -572,7 +670,14 @@ elif menu_choice == "🎓 Student Admissions":
     </div>
     ''', unsafe_allow_html=True)
     
-    tab_single, tab_edit, tab_bulk, tab_promo, tab_classes = st.tabs(["➕ Single Admission", "✏️ Edit & Search Student", "📥 CSV / Excel Import & Export", "🚀 Annual Class Promotion", "🏫 Manage Classes"])
+    tab_single, tab_edit, tab_idcard, tab_bulk, tab_promo, tab_classes = st.tabs([
+        "➕ Single Admission", 
+        "✏️ Edit & Search Student", 
+        "🪪 ID Cards Generator", 
+        "📥 CSV / Excel Import & Export", 
+        "🚀 Annual Class Promotion", 
+        "🏫 Manage Classes"
+    ])
     
     with tab_single:
         with st.form("student_admission_form", clear_on_submit=True):
@@ -582,6 +687,7 @@ elif menu_choice == "🎓 Student Admissions":
             with sc1:
                 std_name = st.text_input("Student Full Name *")
                 std_father = st.text_input("Father's Name *")
+                std_gr = st.text_input("GR Number (General Register No) *")
                 std_class = st.selectbox("Assign Class", class_sequence)
                 std_gender = st.selectbox("Gender", ["Male", "Female", "Other"])
                 std_dob = st.text_input("Date of Birth (e.g. 15-Aug-2020)")
@@ -602,7 +708,7 @@ elif menu_choice == "🎓 Student Admissions":
             std_photo = st.file_uploader("Upload Student Photograph (JPG/PNG)", type=["jpg", "jpeg", "png"])
                 
             if st.form_submit_button("Register Student", type="primary"):
-                if std_name.strip() and std_father.strip() and contact_1.strip() and whatsapp_no.strip() and address.strip():
+                if std_name.strip() and std_father.strip() and std_gr.strip() and contact_1.strip() and whatsapp_no.strip() and address.strip():
                     try:
                         new_s_id = next_student_id(students)
                         
@@ -615,6 +721,7 @@ elif menu_choice == "🎓 Student Admissions":
 
                         student_data = {
                             "id": new_s_id,
+                            "gr_number": std_gr.strip(),
                             "name": std_name.strip(),
                             "father_name": std_father.strip(),
                             "class_name": std_class,
@@ -633,26 +740,26 @@ elif menu_choice == "🎓 Student Admissions":
                             "photo_url": photo_url_val
                         }
                         add_student(student_data)
-                        st.success(f"Student {std_name} ({new_s_id}) successfully enrolled in {std_class}!")
+                        st.success(f"Student {std_name} ({new_s_id} | GR: {std_gr}) successfully enrolled in {std_class}!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Error saving student: {e}")
                 else:
-                    st.warning("Please fill in all mandatory fields (*): Student Name, Father's Name, Contact 1, WhatsApp Number, and Address.")
+                    st.warning("Please fill in all mandatory fields (*): Student Name, Father's Name, GR Number, Contact 1, WhatsApp Number, and Address.")
 
     with tab_edit:
-        st.subheader("🔍 Search & Edit Student Record (Update Picture & Details)")
-        search_query = st.text_input("Search Student by Name, ID, or Phone Number", placeholder="e.g. Ali, STD-001, 0300...")
+        st.subheader("🔍 Search & Edit Student Record (Update GR, Picture & Details)")
+        search_query = st.text_input("Search Student by Name, ID, GR Number, or Phone Number", placeholder="e.g. Ali, STD-001, GR-102...")
         
         filtered_search_list = []
         if search_query.strip():
             q = search_query.strip().lower()
-            filtered_search_list = [s for s in students if any(q in (str(v) or "").lower() for v in [s.get("id"), s.get("name"), s.get("contact_1"), s.get("whatsapp")])]
+            filtered_search_list = [s for s in students if any(q in (str(v) or "").lower() for v in [s.get("id"), s.get("gr_number"), s.get("name"), s.get("contact_1"), s.get("whatsapp")])]
         
         if search_query.strip() and not filtered_search_list:
             st.info("No matching students found.")
         elif filtered_search_list:
-            student_choice_options = {f"{s['name']} (ID: {s['id']} | Class: {s.get('class_name','—')})": s for s in filtered_search_list}
+            student_choice_options = {f"{s['name']} (GR: {s.get('gr_number','—')} | ID: {s['id']} | Class: {s.get('class_name','—')})": s for s in filtered_search_list}
             selected_edit_label = st.selectbox("Select Student to Edit", list(student_choice_options.keys()))
             sel_s = student_choice_options[selected_edit_label]
             
@@ -671,6 +778,7 @@ elif menu_choice == "🎓 Student Admissions":
             
             with col_det:
                 st.markdown(f"**Student ID:** `{sel_s.get('id')}`")
+                st.markdown(f"**GR Number:** `{sel_s.get('gr_number', '—')}`")
                 st.markdown(f"**Current Class:** {sel_s.get('class_name')}")
                 st.markdown(f"**Status:** {sel_s.get('status', 'Active')}")
             
@@ -680,6 +788,7 @@ elif menu_choice == "🎓 Student Admissions":
                 with ec1:
                     e_name = st.text_input("Student Full Name *", value=sel_s.get("name", ""))
                     e_father = st.text_input("Father's Name *", value=sel_s.get("father_name", ""))
+                    e_gr = st.text_input("GR Number *", value=sel_s.get("gr_number", ""))
                     
                     curr_cls = sel_s.get("class_name", class_sequence[0] if class_sequence else "")
                     cls_idx = class_sequence.index(curr_cls) if curr_cls in class_sequence else 0
@@ -719,6 +828,7 @@ elif menu_choice == "🎓 Student Admissions":
                         updated_payload = {
                             "name": str(e_name).strip() if e_name else "",
                             "father_name": str(e_father).strip() if e_father else "",
+                            "gr_number": str(e_gr).strip() if e_gr else "",
                             "class_name": e_class,
                             "monthly_fee": e_fee,
                             "yearly_fee": e_yearly_fee,
@@ -739,15 +849,59 @@ elif menu_choice == "🎓 Student Admissions":
                     except Exception as ex:
                         st.error(f"Error updating student: {ex}")
 
+    with tab_idcard:
+        st.subheader("🪪 Automatic Student ID Card Generator (Class-wise & Individual)")
+        st.write("Generate professional printable ID cards featuring School Theme Colors, Student Photograph, GR Number, Name, Father Name, Class, and Emergency Contact.")
+        
+        id_mode = st.radio("Choose Generation Mode", ["Class-wise ID Cards (All Students in a Class)", "Individual Student ID Card"], horizontal=True)
+        
+        active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
+        
+        if id_mode == "Class-wise ID Cards (All Students in a Class)":
+            idc_class = st.selectbox("Select Class for ID Cards", class_sequence, key="idc_class_sel")
+            cls_students = [s for s in active_students_list if s.get("class_name") == idc_class]
+            
+            st.write(f"Total active students in **{idc_class}**: **{len(cls_students)}**")
+            
+            if not cls_students:
+                st.info(f"No active students found in {idc_class}.")
+            else:
+                id_pdf_bytes = generate_id_cards_pdf(cls_students)
+                st.download_button(
+                    label=f"📥 Download Class {idc_class} ID Cards (.PDF)",
+                    data=id_pdf_bytes,
+                    file_name=f"ID_Cards_{idc_class.replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True
+                )
+        else:
+            if not active_students_list:
+                st.info("No active students found.")
+            else:
+                ind_options = {f"{s['name']} (GR: {s.get('gr_number','—')} | Class: {s.get('class_name','—')})": s for s in active_students_list}
+                selected_ind_label = st.selectbox("Select Individual Student", list(ind_options.keys()), key="ind_std_sel")
+                selected_ind_obj = ind_options[selected_ind_label]
+                
+                ind_pdf_bytes = generate_id_cards_pdf([selected_ind_obj])
+                st.download_button(
+                    label=f"📥 Download ID Card for {selected_ind_obj['name']} (.PDF)",
+                    data=ind_pdf_bytes,
+                    file_name=f"ID_Card_{selected_ind_obj['id']}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True
+                )
+
     with tab_bulk:
         st.subheader("📁 Bulk Import / Export Students (CSV)")
-        st.write("You can download the existing student list or template as a CSV file, fill it, and upload it back here.")
+        st.write("You can download the existing student list or template as a CSV file (including GR Number column), fill it, and upload it back here.")
         
         col_ex1, col_ex2 = st.columns(2)
         with col_ex1:
             if students:
                 df_export = pd.DataFrame(students)
-                expected_cols = ["id", "name", "father_name", "class_name", "monthly_fee", "yearly_fee", "status", "contact_1", "contact_2", "whatsapp", "address", "dob", "gender", "b_form", "blood_group", "previous_school"]
+                expected_cols = ["id", "gr_number", "name", "father_name", "class_name", "monthly_fee", "yearly_fee", "status", "contact_1", "contact_2", "whatsapp", "address", "dob", "gender", "b_form", "blood_group", "previous_school"]
                 existing_cols = [c for c in expected_cols if c in df_export.columns]
                 csv_data = df_export[existing_cols].to_csv(index=False).encode('utf-8')
                 st.download_button(
@@ -762,6 +916,7 @@ elif menu_choice == "🎓 Student Admissions":
                 
         with col_ex2:
             template_df = pd.DataFrame([{
+                "gr_number": "GR-1001",
                 "name": "Ali Khan",
                 "father_name": "Muhammad Khan",
                 "class_name": class_sequence[0] if class_sequence else "Class 1",
@@ -805,6 +960,7 @@ elif menu_choice == "🎓 Student Admissions":
                         if not name_val or name_val.lower() == "nan":
                             continue
                         
+                        gr_val = str(row.get("gr_number", "")).strip()
                         class_val = str(row.get("class_name", class_sequence[0] if class_sequence else "Class 1")).strip()
                         m_fee_val = int(row.get("monthly_fee", 3500) or 3500)
                         y_fee_val = int(row.get("yearly_fee", 5000) or 5000)
@@ -815,6 +971,7 @@ elif menu_choice == "🎓 Student Admissions":
                         
                         sb.table("students").insert({
                             "id": new_id,
+                            "gr_number": gr_val if gr_val and gr_val.lower() != "nan" else "",
                             "name": name_val,
                             "father_name": father_val,
                             "class_name": class_val,
@@ -954,7 +1111,7 @@ elif menu_choice == "💳 Fee Management":
                 
                 with st.container(border=True):
                     cols = st.columns([3, 2, 2, 2])
-                    display_title = f"**{s_name}** (`{s_id}`)" + (f" — *Class: {s_cls}*" if selected_class_fee == "All Active Classes" else "")
+                    display_title = f"**{s_name}** (`{s_id}` | GR: `{s.get('gr_number','—')}`)" + (f" — *Class: {s_cls}*" if selected_class_fee == "All Active Classes" else "")
                     cols[0].markdown(display_title + f"<br>Father: {s.get('father_name','—')} | Cont: {s.get('contact_1','—')}", unsafe_allow_html=True)
                     cols[1].markdown(f"Monthly: **Rs. {m_fee:,}**")
                     cols[2].markdown(f"Yearly: **Rs. {y_fee:,}**")
@@ -993,7 +1150,7 @@ elif menu_choice == "💳 Fee Management":
         if not class_filtered_students:
             st.warning(f"No students with **Paid** monthly fee found in {ch_class} for {ch_month}. Please mark the fee as Paid from the 'Fee Collection & Records' tab first.")
         else:
-            student_options = {f"{s['name']} (ID: {s['id']})": s for s in class_filtered_students}
+            student_options = {f"{s['name']} (GR: {s.get('gr_number','—')} | ID: {s['id']})": s for s in class_filtered_students}
             selected_ch_student_label = ch_c2.selectbox("Select Student (Paid Only)", list(student_options.keys()), key="ch_std_sel")
             selected_student_obj = student_options[selected_ch_student_label]
             
@@ -1027,6 +1184,7 @@ elif menu_choice == "💳 Fee Management":
                 st_info = student_map.get(sid, {})
                 gen_df_data.append({
                     "Student ID": sid,
+                    "GR Number": st_info.get("gr_number", "—"),
                     "Student Name": st_info.get("name", "Unknown"),
                     "Class": st_info.get("class_name", "—"),
                     "Yearly Fee Included": "Yes" if g.get("include_yearly_in_challan") else "No",
@@ -1081,6 +1239,7 @@ elif menu_choice == "💳 Fee Management":
                     
                 ledger_data.append({
                     "Student ID": s_id,
+                    "GR Number": s.get("gr_number", "—"),
                     "Student Name": s.get("name"),
                     "Father's Name": s.get("father_name", "—"),
                     "Contact 1": s.get("contact_1", "—"),
@@ -1165,7 +1324,7 @@ elif menu_choice == "📅 Attendance Sheets":
             <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                 <thead>
                     <tr style="background-color: #3F2B96; color: white;">
-                        <th style="border: 1px solid #ccc; padding: 6px; width: 80px;">Roll No</th>
+                        <th style="border: 1px solid #ccc; padding: 6px; width: 80px;">GR No</th>
                         <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Student Name</th>
         '''
         for d in range(1, 32):
@@ -1176,7 +1335,7 @@ elif menu_choice == "📅 Attendance Sheets":
             s_name = clean_student_name(s.get("name", ""))
             table_html += f'''
                 <tr>
-                    <td style="border: 1px solid #ccc; padding: 5px; text-align: center; font-weight: bold;">{s.get("id")}</td>
+                    <td style="border: 1px solid #ccc; padding: 5px; text-align: center; font-weight: bold;">{s.get("gr_number", "—")}</td>
                     <td style="border: 1px solid #ccc; padding: 5px;">{s_name}</td>
             '''
             for d in range(1, 32):
