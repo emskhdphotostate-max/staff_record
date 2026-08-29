@@ -1174,7 +1174,7 @@ elif menu_choice == "💳 Fee Management":
         report_month = rep_col1.text_input("Report Month & Year", value=datetime.now().strftime("%B %Y"), key="rep_month")
         report_class = rep_col2.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="rep_class")
         
-        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name"] == report_class and s.get("status", "Active") == "Active"]
+        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name") == report_class and s.get("status", "Active") == "Active"]
         if target_students:
             ledger_data = []
             total_collected, total_remaining = 0, 0
