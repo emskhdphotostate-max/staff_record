@@ -99,6 +99,11 @@ def clean_student_name(name_str):
     cleaned = re.sub(r'Class\s*\d+\s*\d*', '', name_str, flags=re.IGNORECASE).strip()
     return cleaned if cleaned else name_str
 
+def safe_text(txt):
+    if not txt:
+        return ""
+    return str(txt).encode('latin-1', 'replace').decode('latin-1')
+
 # ------------------------------------------------------------------
 # Secure Password Gate
 # ------------------------------------------------------------------
@@ -279,24 +284,24 @@ def fetch_generated_challans(month_year):
         return []
 
 # ------------------------------------------------------------------
-# PDF Functions (Including ID Card Generator)
+# PDF Functions (Safe Encoding)
 # ------------------------------------------------------------------
 def generate_staff_pdf(data_rows, custom_fields_list):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "Excellence Model School - Staff Report", 0, 1, "C")
+    pdf.cell(0, 10, safe_text("Excellence Model School - Staff Report"), 0, 1, "C")
     pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 8, f"Total Records: {len(data_rows)}", 0, 1, "C")
+    pdf.cell(0, 8, safe_text(f"Total Records: {len(data_rows)}"), 0, 1, "C")
     pdf.ln(5)
 
     for s in data_rows:
         pdf.set_font("Arial", "B", 11)
         pdf.set_fill_color(230, 230, 250)
-        pdf.cell(0, 8, f"ID: {s.get('id')} | Name: {s.get('name')}", 0, 1, "L", True)
+        pdf.cell(0, 8, safe_text(f"ID: {s.get('id')} | Name: {s.get('name')}"), 0, 1, "L", True)
         pdf.set_font("Arial", "", 10)
-        pdf.cell(0, 6, f"Designation: {s.get('designation')}  |  Campus: {s.get('campus', '—')}", 0, 1, "L")
-        pdf.cell(0, 6, f"Father Name: {s.get('father_name', '—')}  |  Class Teacher: {s.get('class_teacher_of', '—')}", 0, 1, "L")
+        pdf.cell(0, 6, safe_text(f"Designation: {s.get('designation')}  |  Campus: {s.get('campus', '—')}"), 0, 1, "L")
+        pdf.cell(0, 6, safe_text(f"Father Name: {s.get('father_name', '—')}  |  Class Teacher: {s.get('class_teacher_of', '—')}"), 0, 1, "L")
         pdf.ln(3)
     return pdf.output(dest='S').encode('latin1')
 
@@ -304,9 +309,9 @@ def generate_monthly_attendance_pdf(class_name, month_year_str, students_list):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 8, f"Excellence Model School - Monthly Attendance Sheet", 0, 1, "C")
+    pdf.cell(0, 8, safe_text("Excellence Model School - Monthly Attendance Sheet"), 0, 1, "C")
     pdf.set_font("Arial", "B", 11)
-    pdf.cell(0, 6, f"Class: {class_name}    |    Month: {month_year_str}", 0, 1, "C")
+    pdf.cell(0, 6, safe_text(f"Class: {class_name}    |    Month: {month_year_str}"), 0, 1, "C")
     pdf.ln(4)
 
     pdf.set_font("Arial", "B", 8)
@@ -319,8 +324,8 @@ def generate_monthly_attendance_pdf(class_name, month_year_str, students_list):
 
     pdf.set_font("Arial", "", 8)
     for s in students_list:
-        pdf.cell(22, 6, s.get("id", ""), 1, 0, "C")
-        pdf.cell(48, 6, s.get("name", ""), 1, 0, "L")
+        pdf.cell(22, 6, safe_text(s.get("id", "")), 1, 0, "C")
+        pdf.cell(48, 6, safe_text(s.get("name", "")), 1, 0, "L")
         for d in range(1, 32):
             pdf.cell(6.5, 6, "", 1, 0, "C")
         pdf.ln()
@@ -337,9 +342,9 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     
     pdf.set_font("Arial", "B", 13)
     pdf.set_xy(10, 10)
-    pdf.cell(128, 6, "EXCELLENCE MODEL SCHOOL", 0, 1, "C")
+    pdf.cell(128, 6, safe_text("EXCELLENCE MODEL SCHOOL"), 0, 1, "C")
     pdf.set_font("Arial", "", 9)
-    pdf.cell(128, 5, "Fee Payment Challan / Voucher", 0, 1, "C")
+    pdf.cell(128, 5, safe_text("Fee Payment Challan / Voucher"), 0, 1, "C")
     
     pdf.set_draw_color(200, 200, 200)
     pdf.set_line_width(0.3)
@@ -349,36 +354,36 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     pdf.set_font("Arial", "B", 9)
     pdf.cell(30, 6, "Student ID:", 0, 0)
     pdf.set_font("Arial", "", 9)
-    pdf.cell(40, 6, str(student.get("id", "")), 0, 0)
+    pdf.cell(40, 6, safe_text(str(student.get("id", ""))), 0, 0)
     
     pdf.set_font("Arial", "B", 9)
     pdf.cell(25, 6, "Billing Month:", 0, 0)
     pdf.set_font("Arial", "", 9)
-    pdf.cell(33, 6, str(month_year), 0, 1)
+    pdf.cell(33, 6, safe_text(str(month_year)), 0, 1)
     
     pdf.set_xy(10, 34)
     pdf.set_font("Arial", "B", 9)
     pdf.cell(30, 6, "Student Name:", 0, 0)
     pdf.set_font("Arial", "", 9)
-    pdf.cell(40, 6, str(student.get("name", "")), 0, 0)
+    pdf.cell(40, 6, safe_text(str(student.get("name", ""))), 0, 0)
     
     pdf.set_font("Arial", "B", 9)
     pdf.cell(25, 6, "Class:", 0, 0)
     pdf.set_font("Arial", "", 9)
-    pdf.cell(33, 6, str(student.get("class_name", "")), 0, 1)
+    pdf.cell(33, 6, safe_text(str(student.get("class_name", ""))), 0, 1)
     
     pdf.set_xy(10, 41)
     pdf.set_font("Arial", "B", 9)
     pdf.cell(30, 6, "Father's Name:", 0, 0)
     pdf.set_font("Arial", "", 9)
-    pdf.cell(98, 6, str(student.get("father_name", "")), 0, 1)
+    pdf.cell(98, 6, safe_text(str(student.get("father_name", ""))), 0, 1)
     
     pdf.ln(4)
     pdf.set_fill_color(63, 43, 150)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Arial", "B", 9)
-    pdf.cell(90, 7, "  Fee Particulars", 1, 0, "L", True)
-    pdf.cell(33, 7, "Amount (Rs.)  ", 1, 1, "R", True)
+    pdf.cell(90, 7, safe_text("  Fee Particulars"), 1, 0, "L", True)
+    pdf.cell(33, 7, safe_text("Amount (Rs.)  "), 1, 1, "R", True)
     
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("Arial", "", 9)
@@ -386,33 +391,33 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     monthly_fee = int(student.get("monthly_fee", 3500) or 3500)
     yearly_fee = int(student.get("yearly_fee", 5000) or 5000)
     
-    pdf.cell(90, 7, f"   Monthly Tuition Fee ({month_year})", 1, 0, "L")
-    pdf.cell(33, 7, f"Rs. {monthly_fee:,}   ", 1, 1, "R")
+    pdf.cell(90, 7, safe_text(f"   Monthly Tuition Fee ({month_year})"), 1, 0, "L")
+    pdf.cell(33, 7, safe_text(f"Rs. {monthly_fee:,}   "), 1, 1, "R")
     
     total_due = monthly_fee
     if include_yearly:
-        pdf.cell(90, 7, "   Yearly Fee / Annual Charges", 1, 0, "L")
-        pdf.cell(33, 7, f"Rs. {yearly_fee:,}   ", 1, 1, "R")
+        pdf.cell(90, 7, safe_text("   Yearly Fee / Annual Charges"), 1, 0, "L")
+        pdf.cell(33, 7, safe_text(f"Rs. {yearly_fee:,}   "), 1, 1, "R")
         total_due += yearly_fee
         
     pdf.set_font("Arial", "B", 9)
     pdf.set_fill_color(230, 230, 250)
-    pdf.cell(90, 8, "   Total Payable Amount", 1, 0, "L", True)
-    pdf.cell(33, 8, f"Rs. {total_due:,}   ", 1, 1, "R", True)
+    pdf.cell(90, 8, safe_text("   Total Payable Amount"), 1, 0, "L", True)
+    pdf.cell(33, 8, safe_text(f"Rs. {total_due:,}   "), 1, 1, "R", True)
     
     pdf.ln(10)
     pdf.set_font("Arial", "B", 8)
-    pdf.cell(123, 5, "Instructions:", 0, 1, "L")
+    pdf.cell(123, 5, safe_text("Instructions:"), 0, 1, "L")
     pdf.set_font("Arial", "", 8)
-    pdf.cell(123, 4, "1. Please deposit fee before the 10th of every month.", 0, 1, "L")
-    pdf.cell(123, 4, "2. Fee once paid is non-refundable.", 0, 1, "L")
+    pdf.cell(123, 4, safe_text("1. Please deposit fee before the 10th of every month."), 0, 1, "L")
+    pdf.cell(123, 4, safe_text("2. Fee once paid is non-refundable."), 0, 1, "L")
     
     pdf.ln(25)
-    pdf.cell(60, 5, "_________________________", 0, 0, "C")
-    pdf.cell(63, 5, "_________________________", 0, 1, "C")
+    pdf.cell(60, 5, safe_text("_________________________"), 0, 0, "C")
+    pdf.cell(63, 5, safe_text("_________________________"), 0, 1, "C")
     pdf.set_font("Arial", "B", 8)
-    pdf.cell(60, 5, "Cashier / Accountant Sign", 0, 0, "C")
-    pdf.cell(63, 5, "Principal Signature", 0, 1, "C")
+    pdf.cell(60, 5, safe_text("Cashier / Accountant Sign"), 0, 0, "C")
+    pdf.cell(63, 5, safe_text("Principal Signature"), 0, 1, "C")
     
     return pdf.output(dest='S').encode('latin1')
 
@@ -428,26 +433,22 @@ def generate_id_cards_pdf(students_list):
             
         x_start = 30
         
-        # Draw ID Card outer border (Credit card / Standard ID size approx 85mm x 90mm)
         pdf.set_draw_color(63, 43, 150)
         pdf.set_line_width(0.8)
         pdf.rect(x_start, y_start, 150, 88)
         
-        # Header banner inside ID Card
         pdf.set_fill_color(63, 43, 150)
         pdf.rect(x_start, y_start, 150, 18, 'F')
         
         pdf.set_xy(x_start, y_start + 3)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(150, 6, "EXCELLENCE MODEL SCHOOL", 0, 1, "C")
+        pdf.cell(150, 6, safe_text("EXCELLENCE MODEL SCHOOL"), 0, 1, "C")
         pdf.set_font("Arial", "", 8)
-        pdf.cell(150, 4, "STUDENT IDENTITY CARD", 0, 1, "C")
+        pdf.cell(150, 4, safe_text("STUDENT IDENTITY CARD"), 0, 1, "C")
         
-        # Reset text color
         pdf.set_text_color(0, 0, 0)
         
-        # Student Photo Placeholder box
         pdf.set_draw_color(150, 150, 150)
         pdf.set_line_width(0.4)
         pdf.rect(x_start + 10, y_start + 22, 28, 35)
@@ -456,61 +457,58 @@ def generate_id_cards_pdf(students_list):
         if not p_url:
             pdf.set_xy(x_start + 10, y_start + 35)
             pdf.set_font("Arial", "", 8)
-            pdf.cell(28, 5, "NO PHOTO", 0, 0, "C")
+            pdf.cell(28, 5, safe_text("NO PHOTO"), 0, 0, "C")
             
-        # Student Details text
         pdf.set_xy(x_start + 42, y_start + 23)
         pdf.set_font("Arial", "B", 9)
-        pdf.cell(22, 6, "GR No:", 0, 0)
+        pdf.cell(22, 6, safe_text("GR No:"), 0, 0)
         pdf.set_font("Arial", "", 9)
-        pdf.cell(60, 6, str(s.get("gr_number", "—")), 0, 1)
+        pdf.cell(60, 6, safe_text(str(s.get("gr_number", "—"))), 0, 1)
         
         pdf.set_xy(x_start + 42, y_start + 30)
         pdf.set_font("Arial", "B", 9)
-        pdf.cell(22, 6, "Student ID:", 0, 0)
+        pdf.cell(22, 6, safe_text("Student ID:"), 0, 0)
         pdf.set_font("Arial", "", 9)
-        pdf.cell(60, 6, str(s.get("id", "")), 0, 1)
+        pdf.cell(60, 6, safe_text(str(s.get("id", ""))), 0, 1)
         
         pdf.set_xy(x_start + 42, y_start + 37)
         pdf.set_font("Arial", "B", 9)
-        pdf.cell(22, 6, "Name:", 0, 0)
+        pdf.cell(22, 6, safe_text("Name:"), 0, 0)
         pdf.set_font("Arial", "", 9)
-        pdf.cell(85, 6, str(s.get("name", "")), 0, 1)
+        pdf.cell(85, 6, safe_text(str(s.get("name", ""))), 0, 1)
         
         pdf.set_xy(x_start + 42, y_start + 44)
         pdf.set_font("Arial", "B", 9)
-        pdf.cell(22, 6, "Father Name:", 0, 0)
+        pdf.cell(22, 6, safe_text("Father Name:"), 0, 0)
         pdf.set_font("Arial", "", 9)
-        pdf.cell(85, 6, str(s.get("father_name", "")), 0, 1)
+        pdf.cell(85, 6, safe_text(str(s.get("father_name", ""))), 0, 1)
         
         pdf.set_xy(x_start + 42, y_start + 51)
         pdf.set_font("Arial", "B", 9)
-        pdf.cell(22, 6, "Class:", 0, 0)
+        pdf.cell(22, 6, safe_text("Class:"), 0, 0)
         pdf.set_font("Arial", "", 9)
-        pdf.cell(85, 6, str(s.get("class_name", "")), 0, 1)
+        pdf.cell(85, 6, safe_text(str(s.get("class_name", ""))), 0, 1)
         
-        # Bottom details line
         pdf.set_xy(x_start + 10, y_start + 62)
         pdf.set_font("Arial", "B", 8)
-        pdf.cell(25, 5, "Emergency No:", 0, 0)
+        pdf.cell(25, 5, safe_text("Emergency No:"), 0, 0)
         pdf.set_font("Arial", "", 8)
-        pdf.cell(50, 5, str(s.get("contact_1", "—")), 0, 0)
+        pdf.cell(50, 5, safe_text(str(s.get("contact_1", "—"))), 0, 0)
         
         pdf.set_font("Arial", "B", 8)
-        pdf.cell(18, 5, "Blood Grp:", 0, 0)
+        pdf.cell(18, 5, safe_text("Blood Grp:"), 0, 0)
         pdf.set_font("Arial", "", 8)
-        pdf.cell(30, 5, str(s.get("blood_group", "—")), 0, 1)
+        pdf.cell(30, 5, safe_text(str(s.get("blood_group", "—"))), 0, 1)
         
-        # Footer sign line
         pdf.line(x_start + 10, y_start + 78, x_start + 50, y_start + 78)
         pdf.line(x_start + 110, y_start + 78, x_start + 140, y_start + 78)
         
         pdf.set_xy(x_start + 10, y_start + 79)
         pdf.set_font("Arial", "B", 7)
-        pdf.cell(40, 4, "Issued By Authority", 0, 0, "L")
+        pdf.cell(40, 4, safe_text("Issued By Authority"), 0, 0, "L")
         
         pdf.set_xy(x_start + 105, y_start + 79)
-        pdf.cell(35, 4, "Principal Sign", 0, 1, "R")
+        pdf.cell(35, 4, safe_text("Principal Sign"), 0, 1, "R")
         
     return pdf.output(dest='S').encode('latin1')
 
@@ -704,7 +702,6 @@ elif menu_choice == "🎓 Student Admissions":
             address = st.text_area("Residential Address *")
             prev_school = st.text_input("Previous School / Last Attended Class (if any)")
             
-            # Student Photograph Upload
             std_photo = st.file_uploader("Upload Student Photograph (JPG/PNG)", type=["jpg", "jpeg", "png"])
                 
             if st.form_submit_button("Register Student", type="primary"):
@@ -712,7 +709,6 @@ elif menu_choice == "🎓 Student Admissions":
                     try:
                         new_s_id = next_student_id(students)
                         
-                        # Process Photo if uploaded
                         photo_url_val = ""
                         if std_photo is not None:
                             bytes_data = std_photo.getvalue()
@@ -765,7 +761,6 @@ elif menu_choice == "🎓 Student Admissions":
             
             st.divider()
             
-            # Display current student picture if available
             col_img, col_det = st.columns([1, 3])
             with col_img:
                 st.write("### Current Photo")
