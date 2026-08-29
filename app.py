@@ -17,6 +17,39 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+import streamlit as st
+# Aapki baqi libraries (pandas, supabase, etc.) yahan aayengi
+
+# 1. Session State Initialize karein
+if "is_logged_in" not in st.session_state:
+  st.session_state["is_logged_in"] = False
+if "is_demo" not in st.session_state:
+  st.session_state["is_demo"] = False
+
+# 2. Agar login nahi hai toh login/demo screen dikhayein
+if not st.session_state["is_logged_in"]:
+  st.subheader("EMS 2026 - System Access")
+  col1, col2 = st.columns(2)
+  with col1:
+    # Purana password ya admin login yahan connect kar sakte hain
+    if st.button("Login as Admin"):
+      st.session_state["is_logged_in"] = True
+      st.session_state["is_demo"] = False
+      st.rerun()
+  with col2:
+    if st.button("View Live Demo (Read-Only)"):
+      st.session_state["is_logged_in"] = True
+      st.session_state["is_demo"] = True
+      st.rerun()
+
+  # Yahan st.stop() lagana zaroori hai taake login se pehle aage ki app na khule
+  st.stop()
+
+# --- ISKE NEECHAY AAPKI ASAL APP KA CODE SHURU HOGA ---
+
+
+
+
 # Custom CSS for Professional Dashboard Theme
 st.markdown('''
 <style>
