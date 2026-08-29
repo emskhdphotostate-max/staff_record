@@ -61,11 +61,6 @@ if not st.session_state["is_logged_in"]:
   st.stop()
 # --- LOGIN GATE END ---
 
-# --- ISKE NEECHAY AAPKI ASAL APP KA CODE SHURU HOGA ---
-
-
-
-
 # Custom CSS for Professional Dashboard Theme
 st.markdown('''
 <style>
@@ -154,45 +149,6 @@ def safe_text(txt):
     return str(txt).encode('latin-1', 'replace').decode('latin-1')
 
 # ------------------------------------------------------------------
-# Secure Password Gate
-# ------------------------------------------------------------------
-def check_password():
-    def password_entered():
-        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]
-        else:
-            st.session_state["password_correct"] = False
-
-    if "password_correct" not in st.session_state or not st.session_state["password_correct"]:
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            logo_path = get_logo_path()
-            logo_base64 = get_image_base64(logo_path)
-            logo_html = f'<img src="data:image/png;base64,{logo_base64}" width="110" style="margin-bottom: 10px;" />' if logo_base64 else '<div style="font-size: 45px; margin-bottom: 10px;">🎓</div>'
-            
-            st.markdown(
-                f'''
-                <div style="background: linear-gradient(135deg, #3F2B96, #1A103C); padding: 35px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); text-align: center; color: white; margin-top: 30px;">
-                    <div style="text-align: center;">{logo_html}</div>
-                    <h1 style="margin: 15px 0 5px 0; font-size: 22px; font-weight: 800; color: #ffffff !important;">EXCELLENCE MODEL SCHOOL</h1>
-                    <p style="margin: 0; font-size: 12px; color: #D4C5F9 !important;">Secure Enterprise Portal</p>
-                </div>
-                ''',
-                unsafe_allow_html=True
-            )
-            st.write("")
-            st.text_input("🔐 Enter System Password:", type="password", on_change=password_entered, key="password")
-            if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-                st.error("⚠️ Incorrect password, please try again!")
-        return False
-    else:
-        return True
-
-if not check_password():
-    st.stop()
-
-# ------------------------------------------------------------------
 # Supabase connection
 # ------------------------------------------------------------------
 @st.cache_resource
@@ -260,11 +216,17 @@ def fetch_students():
     return data
 
 def add_student(record):
+    if st.session_state.get("is_demo", False):
+        st.warning("Demo Mode: Changes cannot be saved to the database.")
+        return
     if "status" not in record:
         record["status"] = "Active"
     sb.table("students").insert(record).execute()
 
 def update_student(student_id, record):
+    if st.session_state.get("is_demo", False):
+        st.warning("Demo Mode: Changes cannot be saved to the database.")
+        return
     sb.table("students").update(record).eq("id", student_id).execute()
 
 def fetch_fee_record(student_id, month_year):
@@ -288,6 +250,9 @@ def get_fee_statuses(student_id, month_year):
     return m_stat, y_stat
 
 def set_fee_status(student_id, month_year, m_stat, y_stat, amount=0):
+    if st.session_state.get("is_demo", False):
+        st.warning("Demo Mode: Changes cannot be saved to the database.")
+        return
     existing = fetch_fee_record(student_id, month_year)
     today = datetime.now().strftime("%Y-%m-%d")
     status_str = f"Monthly:{m_stat} | Yearly:{y_stat}"
@@ -307,6 +272,8 @@ def set_fee_status(student_id, month_year, m_stat, y_stat, amount=0):
         }).execute()
 
 def mark_challan_generated(student_id, month_year, include_yearly):
+    if st.session_state.get("is_demo", False):
+        return
     existing = fetch_fee_record(student_id, month_year)
     current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if existing:
@@ -333,7 +300,7 @@ def fetch_generated_challans(month_year):
         return []
 
 # ------------------------------------------------------------------
-# PDF Functions (Safe Encoding & Base64 Image Processing)
+# PDF Functions
 # ------------------------------------------------------------------
 def generate_staff_pdf(data_rows, custom_fields_list):
     pdf = FPDF()
@@ -483,23 +450,19 @@ def generate_id_cards_pdf(students_list):
             
         x_start = 30
         
-        # Outer Card Border
         pdf.set_draw_color(63, 43, 150)
         pdf.set_line_width(0.8)
         pdf.rect(x_start, y_start, 150, 88)
         
-        # Header Banner Background
         pdf.set_fill_color(63, 43, 150)
         pdf.rect(x_start, y_start, 150, 20, 'F')
         
-        # Insert Logo if available on ID Card Header
         if logo_path and os.path.exists(logo_path):
             try:
                 pdf.image(logo_path, x=x_start + 8, y=y_start + 2.5, w=15)
             except Exception:
                 pass
         
-        # Header Centered Text
         pdf.set_xy(x_start, y_start + 3)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Arial", "B", 12)
@@ -510,7 +473,6 @@ def generate_id_cards_pdf(students_list):
         
         pdf.set_text_color(0, 0, 0)
         
-        # Student Photo Box
         pdf.set_draw_color(150, 150, 150)
         pdf.set_line_width(0.4)
         pdf.rect(x_start + 10, y_start + 24, 28, 35)
@@ -543,7 +505,6 @@ def generate_id_cards_pdf(students_list):
             except Exception:
                 pass
             
-        # Student Details Layout
         pdf.set_xy(x_start + 42, y_start + 24)
         pdf.set_font("Arial", "B", 9)
         pdf.cell(25, 6, safe_text("GR No:"), 0, 0)
@@ -574,7 +535,6 @@ def generate_id_cards_pdf(students_list):
         pdf.set_font("Arial", "", 9)
         pdf.cell(75, 6, safe_text(str(s.get("class_name", ""))), 0, 1)
         
-        # Emergency & Blood Group Row
         pdf.set_xy(x_start + 10, y_start + 63)
         pdf.set_font("Arial", "B", 8)
         pdf.cell(25, 5, safe_text("Emergency No:"), 0, 0)
@@ -586,7 +546,6 @@ def generate_id_cards_pdf(students_list):
         pdf.set_font("Arial", "", 8)
         pdf.cell(25, 5, safe_text(str(s.get("blood_group", "—"))), 0, 1)
         
-        # Perfectly Balanced & Centered Signature Section
         line_y = y_start + 78
         pdf.line(x_start + 15, line_y, x_start + 65, line_y)
         pdf.line(x_start + 85, line_y, x_start + 135, line_y)
@@ -644,7 +603,7 @@ with st.sidebar:
     if st.button("🔄 Refresh Data", use_container_width=True):
         st.rerun()
     if st.button("🔒 Secure Logout", use_container_width=True):
-        st.session_state["password_correct"] = False
+        st.session_state["is_logged_in"] = False
         st.rerun()
 
 menu_choice = st.session_state.get("selected_menu", "📊 Dashboard Overview")
@@ -709,15 +668,16 @@ elif menu_choice == "👥 Staff Management":
                 if not name.strip() or not designation:
                     st.error("Please enter Name and Designation.")
                 else:
-                    sb.table("staff").insert({
-                        "id": next_staff_id(staff),
-                        "name": name.strip(),
-                        "father_name": father_name.strip(),
-                        "designation": designation,
-                        "class_teacher_of": class_teacher_of.strip(),
-                        "subject_teacher": subject_teacher.strip(),
-                        "campus": campus,
-                    }).execute()
+                    if not st.session_state.get("is_demo", False):
+                        sb.table("staff").insert({
+                            "id": next_staff_id(staff),
+                            "name": name.strip(),
+                            "father_name": father_name.strip(),
+                            "designation": designation,
+                            "class_teacher_of": class_teacher_of.strip(),
+                            "subject_teacher": subject_teacher.strip(),
+                            "campus": campus,
+                        }).execute()
                     st.success(f"Staff member {name} added successfully.")
                     st.rerun()
 
@@ -742,7 +702,8 @@ elif menu_choice == "👥 Staff Management":
             c1.markdown(f"**{s['name']}**<br>`{s.get('id')}`", unsafe_allow_html=True)
             c2.markdown(f"<span class='ems-badge'>{s.get('designation','')}</span> | Father: {s.get('father_name','—')} | Campus: {s.get('campus','—')}", unsafe_allow_html=True)
             if c3.button("Delete", key=f"del_staff_{s['id']}"):
-                sb.table("staff").delete().eq("id", s["id"]).execute()
+                if not st.session_state.get("is_demo", False):
+                    sb.table("staff").delete().eq("id", s["id"]).execute()
                 st.rerun()
 
 # ==================================================================
@@ -829,7 +790,7 @@ elif menu_choice == "🎓 Student Admissions":
                     except Exception as e:
                         st.error(f"Error saving student: {e}")
                 else:
-                    st.warning("Please fill in all mandatory fields (*): Student Name, Father's Name, GR Number, Contact 1, WhatsApp Number, and Address.")
+                    st.warning("Please fill in all mandatory fields (*).")
 
     with tab_edit:
         st.subheader("🔍 Search & Edit Student Record (Update GR, Picture & Details)")
@@ -898,7 +859,7 @@ elif menu_choice == "🎓 Student Admissions":
                 e_address = st.text_area("Residential Address *", value=sel_s.get("address", ""))
                 e_prev_school = st.text_input("Previous School / Last Attended Class", value=sel_s.get("previous_school", ""))
                 
-                new_uploaded_photo = st.file_uploader("Upload New Student Photograph (JPG/PNG) - Leave empty to keep existing", type=["jpg", "jpeg", "png"])
+                new_uploaded_photo = st.file_uploader("Upload New Student Photograph (JPG/PNG)", type=["jpg", "jpeg", "png"])
                 
                 if st.form_submit_button("Update Student Record", type="primary"):
                     try:
@@ -934,8 +895,6 @@ elif menu_choice == "🎓 Student Admissions":
 
     with tab_idcard:
         st.subheader("🪪 Automatic Student ID Card Generator (Class-wise & Individual)")
-        st.write("Generate professional printable ID cards featuring School Theme Colors, Student Photograph, GR Number, Name, Father Name, Class, and Emergency Contact.")
-        
         id_mode = st.radio("Choose Generation Mode", ["Class-wise ID Cards (All Students in a Class)", "Individual Student ID Card"], horizontal=True)
         
         active_students_list = [s for s in students if s.get("status", "Active") == "Active"]
@@ -971,14 +930,13 @@ elif menu_choice == "🎓 Student Admissions":
                     label=f"📥 Download ID Card for {selected_ind_obj['name']} (.PDF)",
                     data=ind_pdf_bytes,
                     file_name=f"ID_Card_{selected_ind_obj['id']}.pdf",
-                    mime="primary",
+                    mime="application/pdf",
+                    type="primary",
                     use_container_width=True
                 )
 
     with tab_bulk:
         st.subheader("📁 Bulk Import / Export Students (CSV)")
-        st.write("You can download the existing student list or template as a CSV file (including GR Number column), fill it, and upload it back here.")
-        
         col_ex1, col_ex2 = st.columns(2)
         with col_ex1:
             if students:
@@ -1025,7 +983,6 @@ elif menu_choice == "🎓 Student Admissions":
             )
             
         st.divider()
-        st.write("### Upload Filled CSV File")
         uploaded_csv = st.file_uploader("Upload CSV file containing students data", type=["csv"])
         
         if uploaded_csv is not None:
@@ -1034,123 +991,102 @@ elif menu_choice == "🎓 Student Admissions":
                 st.write("Preview of uploaded data:", import_df.head())
                 
                 if st.button("🚀 Confirm & Import Students", type="primary"):
-                    current_students = fetch_students()
-                    success_count = 0
-                    for _, row in import_df.iterrows():
-                        name_val = str(row.get("name", "")).strip()
-                        father_val = str(row.get("father_name", "")).strip()
-                        if not name_val or name_val.lower() == "nan":
-                            continue
-                        
-                        gr_val = str(row.get("gr_number", "")).strip()
-                        class_val = str(row.get("class_name", class_sequence[0] if class_sequence else "Class 1")).strip()
-                        m_fee_val = int(row.get("monthly_fee", 3500) or 3500)
-                        y_fee_val = int(row.get("yearly_fee", 5000) or 5000)
-                        status_val = str(row.get("status", "Active")).strip()
-                        
-                        new_id = next_student_id(current_students)
-                        current_students.append({"id": new_id})
-                        
-                        sb.table("students").insert({
-                            "id": new_id,
-                            "gr_number": gr_val if gr_val and gr_val.lower() != "nan" else "",
-                            "name": name_val,
-                            "father_name": father_val,
-                            "class_name": class_val,
-                            "monthly_fee": m_fee_val,
-                            "yearly_fee": y_fee_val,
-                            "status": status_val if status_val in ["Active", "Graduated"] else "Active",
-                            "contact_1": str(row.get("contact_1", "")).strip(),
-                            "contact_2": str(row.get("contact_2", "")).strip(),
-                            "whatsapp": str(row.get("whatsapp", "")).strip(),
-                            "address": str(row.get("address", "")).strip(),
-                            "dob": str(row.get("dob", "")).strip(),
-                            "gender": str(row.get("gender", "Male")).strip(),
-                            "b_form": str(row.get("b_form", "")).strip(),
-                            "blood_group": str(row.get("blood_group", "Unknown")).strip(),
-                            "previous_school": str(row.get("previous_school", "")).strip(),
-                            "photo_url": ""
-                        }).execute()
-                        success_count += 1
-                        
-                    st.success(f"Successfully imported {success_count} students!")
+                    if not st.session_state.get("is_demo", False):
+                        current_students = fetch_students()
+                        success_count = 0
+                        for _, row in import_df.iterrows():
+                            name_val = str(row.get("name", "")).strip()
+                            father_val = str(row.get("father_name", "")).strip()
+                            if not name_val or name_val.lower() == "nan":
+                                continue
+                            
+                            gr_val = str(row.get("gr_number", "")).strip()
+                            class_val = str(row.get("class_name", class_sequence[0] if class_sequence else "Class 1")).strip()
+                            m_fee_val = int(row.get("monthly_fee", 3500) or 3500)
+                            y_fee_val = int(row.get("yearly_fee", 5000) or 5000)
+                            status_val = str(row.get("status", "Active")).strip()
+                            
+                            new_id = next_student_id(current_students)
+                            current_students.append({"id": new_id})
+                            
+                            sb.table("students").insert({
+                                "id": new_id,
+                                "gr_number": gr_val if gr_val and gr_val.lower() != "nan" else "",
+                                "name": name_val,
+                                "father_name": father_val,
+                                "class_name": class_val,
+                                "monthly_fee": m_fee_val,
+                                "yearly_fee": y_fee_val,
+                                "status": status_val if status_val in ["Active", "Graduated"] else "Active",
+                                "contact_1": str(row.get("contact_1", "")).strip(),
+                                "contact_2": str(row.get("contact_2", "")).strip(),
+                                "whatsapp": str(row.get("whatsapp", "")).strip(),
+                                "address": str(row.get("address", "")).strip(),
+                                "dob": str(row.get("dob", "")).strip(),
+                                "gender": str(row.get("gender", "Male")).strip(),
+                                "b_form": str(row.get("b_form", "")).strip(),
+                                "blood_group": str(row.get("blood_group", "Unknown")).strip(),
+                                "previous_school": str(row.get("previous_school", "")).strip(),
+                                "photo_url": ""
+                            }).execute()
+                            success_count += 1
+                        st.success(f"Successfully imported {success_count} students!")
                     st.rerun()
             except Exception as e:
                 st.error(f"Error parsing CSV file: {e}")
 
     with tab_promo:
         st.subheader("🚀 Annual Class Promotion & Session Upgrade")
-        sequence_str = " ➔ ".join(class_sequence)
-        st.info(f"Here you can run the annual promotion following this sequence: **{sequence_str}**. The last class in this sequence will automatically be marked as 'Graduated / Alumni'.")
-
-        active_count = len([s for s in students if s.get("status", "Active") == "Active"])
-        st.write(f"Total Active Students ready for promotion check: **{active_count}**")
-
         if st.button("✨ Run Global Annual Promotion", type="primary"):
             try:
-                all_stds = fetch_students()
-                promoted_count = 0
-                graduated_count = 0
-                last_class = class_sequence[-1] if class_sequence else "Matric"
+                if not st.session_state.get("is_demo", False):
+                    all_stds = fetch_students()
+                    promoted_count = 0
+                    graduated_count = 0
+                    last_class = class_sequence[-1] if class_sequence else "Matric"
 
-                for s in all_stds:
-                    if s.get("status", "Active") != "Active":
-                        continue
-                    
-                    curr_cls = s.get("class_name")
-                    s_id = s.get("id")
+                    for s in all_stds:
+                        if s.get("status", "Active") != "Active":
+                            continue
+                        curr_cls = s.get("class_name")
+                        s_id = s.get("id")
 
-                    if curr_cls == last_class:
-                        sb.table("students").update({"status": "Graduated"}).eq("id", s_id).execute()
-                        graduated_count += 1
-                    elif curr_cls in class_sequence:
-                        idx = class_sequence.index(curr_cls)
-                        if idx + 1 < len(class_sequence):
-                            next_cls = class_sequence[idx + 1]
-                            sb.table("students").update({"class_name": next_cls}).eq("id", s_id).execute()
-                            promoted_count += 1
-
-                st.success(f"Promotion completed successfully! {promoted_count} students promoted to next classes, and {graduated_count} {last_class} students moved to Alumni/Graduated records.")
+                        if curr_cls == last_class:
+                            sb.table("students").update({"status": "Graduated"}).eq("id", s_id).execute()
+                            graduated_count += 1
+                        elif curr_cls in class_sequence:
+                            idx = class_sequence.index(curr_cls)
+                            if idx + 1 < len(class_sequence):
+                                next_cls = class_sequence[idx + 1]
+                                sb.table("students").update({"class_name": next_cls}).eq("id", s_id).execute()
+                                promoted_count += 1
+                    st.success("Promotion completed successfully!")
                 st.rerun()
             except Exception as e:
                 st.error(f"Error during promotion: {e}")
 
     with tab_classes:
         st.subheader("🏫 Manage Classes (Add & Remove)")
-        st.write("Here you can add new classes or remove unwanted classes from the system.")
-
         col_add_cls, col_list_cls = st.columns([1, 1])
-
         with col_add_cls:
             with st.form("add_new_class_form", clear_on_submit=True):
                 new_cls_name = st.text_input("New Class Name (e.g. Nursery)")
                 if st.form_submit_button("Add Class", type="primary"):
                     if new_cls_name.strip():
                         c_name = new_cls_name.strip()
-                        if c_name in class_sequence:
-                            st.warning("This class already exists.")
-                        else:
-                            try:
-                                sb.table("classes").insert({"label": c_name}).execute()
-                                st.success(f"Class '{c_name}' added successfully!")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error adding class: {e}")
-                    else:
-                        st.warning("Please enter a class name.")
-
+                        if c_name not in class_sequence and not st.session_state.get("is_demo", False):
+                            sb.table("classes").insert({"label": c_name}).execute()
+                        st.success(f"Class '{c_name}' processed!")
+                        st.rerun()
         with col_list_cls:
             st.write("### Current Active Classes")
             for c in class_sequence:
                 rc1, rc2 = st.columns([3, 1])
                 rc1.write(f"• **{c}**")
                 if rc2.button("Remove", key=f"del_cls_{c}"):
-                    try:
+                    if not st.session_state.get("is_demo", False):
                         sb.table("classes").delete().eq("label", c).execute()
-                        st.success(f"Class '{c}' removed.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error: {e}")
+                    st.rerun()
 
 # ==================================================================
 # 4. FEE MANAGEMENT
@@ -1168,7 +1104,6 @@ elif menu_choice == "💳 Fee Management":
     with tab_rec:
         f_c1, f_c2 = st.columns(2)
         selected_class_fee = f_c1.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="fee_class_select")
-        
         current_month_default = datetime.now().strftime("%B %Y")
         target_month_fee = f_c2.text_input("Billing Month & Year", value=current_month_default, key="fee_month_input")
         
@@ -1179,69 +1114,50 @@ elif menu_choice == "💳 Fee Management":
         
         st.subheader(f"Students in {selected_class_fee} ({len(class_students)})")
         
-        if not class_students:
-            st.info(f"No active students found.")
-        else:
-            for s in class_students:
-                s_id = s["id"]
-                s_name = s["name"]
-                s_cls = s.get("class_name", "")
-                m_fee = int(s.get("monthly_fee") or 3500)
-                y_fee = int(s.get("yearly_fee") or 5000)
+        for s in class_students:
+            s_id = s["id"]
+            s_name = s["name"]
+            m_fee = int(s.get("monthly_fee") or 3500)
+            y_fee = int(s.get("yearly_fee") or 5000)
+            m_stat, y_stat = get_fee_statuses(s_id, target_month_fee)
+            
+            with st.container(border=True):
+                cols = st.columns([3, 2, 2, 2])
+                cols[0].markdown(f"**{s_name}** (`{s_id}` | GR: `{s.get('gr_number','—')}`)", unsafe_allow_html=True)
+                cols[1].markdown(f"Monthly: **Rs. {m_fee:,}**")
+                cols[2].markdown(f"Yearly: **Rs. {y_fee:,}**")
+                cols[3].markdown(f"Status: `M:{m_stat} | Y:{y_stat}`")
                 
-                m_stat, y_stat = get_fee_statuses(s_id, target_month_fee)
-                
-                with st.container(border=True):
-                    cols = st.columns([3, 2, 2, 2])
-                    display_title = f"**{s_name}** (`{s_id}` | GR: `{s.get('gr_number','—')}`)" + (f" — *Class: {s_cls}*" if selected_class_fee == "All Active Classes" else "")
-                    cols[0].markdown(display_title + f"<br>Father: {s.get('father_name','—')} | Cont: {s.get('contact_1','—')}", unsafe_allow_html=True)
-                    cols[1].markdown(f"Monthly: **Rs. {m_fee:,}**")
-                    cols[2].markdown(f"Yearly: **Rs. {y_fee:,}**")
-                    
-                    status_label = f"M:{m_stat} | Y:{y_stat}"
-                    cols[3].markdown(f"Status: `{status_label}`")
-                    
-                    btn_cols = st.columns(3)
-                    if btn_cols[0].button(f"{'✅ Monthly Paid' if m_stat=='Paid' else '⏳ Mark Monthly Paid'}", key=f"m_paid_{s_id}_{target_month_fee}"):
-                        new_m = "Pending" if m_stat=="Paid" else "Paid"
-                        total_amt = (m_fee if new_m=="Paid" else 0) + (y_fee if y_stat=="Paid" else 0)
-                        set_fee_status(s_id, target_month_fee, new_m, y_stat, total_amt)
-                        st.rerun()
-                        
-                    if btn_cols[1].button(f"{'✅ Yearly Paid' if y_stat=='Paid' else '⏳ Mark Yearly Paid'}", key=f"y_paid_{s_id}_{target_month_fee}"):
-                        new_y = "Pending" if y_stat=="Paid" else "Paid"
-                        total_amt = (m_fee if m_stat=="Paid" else 0) + (y_fee if new_y=="Paid" else 0)
-                        set_fee_status(s_id, target_month_fee, m_stat, new_y, total_amt)
-                        st.rerun()
+                btn_cols = st.columns(3)
+                if btn_cols[0].button(f"{'✅ Monthly Paid' if m_stat=='Paid' else '⏳ Mark Monthly Paid'}", key=f"m_paid_{s_id}_{target_month_fee}"):
+                    new_m = "Pending" if m_stat=="Paid" else "Paid"
+                    total_amt = (m_fee if new_m=="Paid" else 0) + (y_fee if y_stat=="Paid" else 0)
+                    set_fee_status(s_id, target_month_fee, new_m, y_stat, total_amt)
+                    st.rerun()
+                if btn_cols[1].button(f"{'✅ Yearly Paid' if y_stat=='Paid' else '⏳ Mark Yearly Paid'}", key=f"y_paid_{s_id}_{target_month_fee}"):
+                    new_y = "Pending" if y_stat=="Paid" else "Paid"
+                    total_amt = (m_fee if m_stat=="Paid" else 0) + (y_fee if new_y=="Paid" else 0)
+                    set_fee_status(s_id, target_month_fee, m_stat, new_y, total_amt)
+                    st.rerun()
 
     with tab_challan:
         st.subheader("🖨️ Generate & Download Fee Challan (PDF)")
-        st.write("Challans can only be generated for students whose monthly fee is marked as **'Paid'**.")
-        
         ch_c1, ch_c2, ch_c3 = st.columns([2, 2, 1])
         ch_class = ch_c1.selectbox("Filter Class for Challan", class_sequence, key="ch_class_sel")
         ch_month = ch_c3.text_input("Month / Year", value=datetime.now().strftime("%B %Y"), key="ch_month_input")
         
-        class_filtered_students = []
-        for s in students:
-            if s.get("class_name") == ch_class and s.get("status", "Active") == "Active":
-                m_stat, _ = get_fee_statuses(s["id"], ch_month)
-                if m_stat == "Paid":
-                    class_filtered_students.append(s)
+        class_filtered_students = [s for s in students if s.get("class_name") == ch_class and s.get("status", "Active") == "Active" and get_fee_statuses(s["id"], ch_month)[0] == "Paid"]
         
         if not class_filtered_students:
-            st.warning(f"No students with **Paid** monthly fee found in {ch_class} for {ch_month}. Please mark the fee as Paid from the 'Fee Collection & Records' tab first.")
+            st.warning(f"No students with **Paid** monthly fee found in {ch_class} for {ch_month}.")
         else:
             student_options = {f"{s['name']} (GR: {s.get('gr_number','—')} | ID: {s['id']})": s for s in class_filtered_students}
             selected_ch_student_label = ch_c2.selectbox("Select Student (Paid Only)", list(student_options.keys()), key="ch_std_sel")
             selected_student_obj = student_options[selected_ch_student_label]
-            
             include_yearly_in_challan = st.checkbox("Include Yearly Fee in this Challan Voucher", value=False)
             
-            st.write("")
             if selected_student_obj:
                 challan_pdf_bytes = generate_fee_challan_pdf(selected_student_obj, ch_month, include_yearly=include_yearly_in_challan)
-                
                 if st.download_button(
                     label=f"📄 Download Fee Challan for {selected_student_obj['name']} (.PDF)",
                     data=challan_pdf_bytes,
@@ -1252,121 +1168,31 @@ elif menu_choice == "💳 Fee Management":
                 ):
                     mark_challan_generated(selected_student_obj['id'], ch_month, include_yearly_in_challan)
 
-        st.divider()
-        st.subheader(f"📋 Challans Generated for: {ch_month}")
-        generated_list = fetch_generated_challans(ch_month)
-        
-        if not generated_list:
-            st.info(f"No challans generated yet for {ch_month}.")
-        else:
-            gen_df_data = []
-            student_map = {s["id"]: s for s in students}
-            for g in generated_list:
-                sid = g.get("student_id")
-                st_info = student_map.get(sid, {})
-                gen_df_data.append({
-                    "Student ID": sid,
-                    "GR Number": st_info.get("gr_number", "—"),
-                    "Student Name": st_info.get("name", "Unknown"),
-                    "Class": st_info.get("class_name", "—"),
-                    "Yearly Fee Included": "Yes" if g.get("include_yearly_in_challan") else "No",
-                    "Generated Date & Time": g.get("challan_date", "—")
-                })
-            st.dataframe(pd.DataFrame(gen_df_data), use_container_width=True)
-
     with tab_rep:
         st.subheader("📊 Financial Collection Reports & Ledger Export")
         rep_col1, rep_col2, rep_col3 = st.columns(3)
         report_month = rep_col1.text_input("Report Month & Year", value=datetime.now().strftime("%B %Y"), key="rep_month")
         report_class = rep_col2.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="rep_class")
         
-        filter_by_date = rep_col3.checkbox("Filter by Specific Paid Date?", value=False)
-        target_date_str = None
-        if filter_by_date:
-            target_date = rep_col3.date_input("Select Date", datetime.now())
-            target_date_str = target_date.strftime("%Y-%m-%d")
-            
-        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name") == report_class and s.get("status", "Active") == "Active"]
-        
-        if not target_students:
-            st.info("No students found for this selection.")
-        else:
+        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name"] == report_class and s.get("status", "Active") == "Active"]
+        if target_students:
             ledger_data = []
-            total_expected = 0
-            total_collected = 0
-            total_collected_on_date = 0
-            total_remaining = 0
-            
+            total_collected, total_remaining = 0, 0
             for s in target_students:
                 s_id = s["id"]
                 m_fee = int(s.get("monthly_fee") or 3500)
                 y_fee = int(s.get("yearly_fee") or 5000)
-                
                 m_stat, y_stat = get_fee_statuses(s_id, report_month)
                 rec = fetch_fee_record(s_id, report_month)
-                
                 paid_amt = rec.get("amount", 0) if rec else 0
-                paid_date = rec.get("paid_date", "") if rec else ""
-                is_challan_gen = "Yes" if (rec and rec.get("challan_generated")) else "No"
-                
-                if m_stat == "Pending":
-                    total_remaining += m_fee
-                if y_stat == "Pending":
-                    total_remaining += y_fee
-                    
+                if m_stat == "Pending": total_remaining += m_fee
+                if y_stat == "Pending": total_remaining += y_fee
                 total_collected += paid_amt
-                
-                if target_date_str and paid_date == target_date_str:
-                    total_collected_on_date += paid_amt
-                    
                 ledger_data.append({
-                    "Student ID": s_id,
-                    "GR Number": s.get("gr_number", "—"),
-                    "Student Name": s.get("name"),
-                    "Father's Name": s.get("father_name", "—"),
-                    "Contact 1": s.get("contact_1", "—"),
-                    "WhatsApp": s.get("whatsapp", "—"),
-                    "Class": s.get("class_name"),
-                    "Monthly Fee Status": m_stat,
-                    "Yearly Fee Status": y_stat,
-                    "Challan Generated": is_challan_gen,
-                    "Total Paid (Rs.)": paid_amt,
-                    "Paid Date": paid_date
+                    "Student ID": s_id, "GR Number": s.get("gr_number", "—"), "Student Name": s.get("name"),
+                    "Class": s.get("class_name"), "Monthly Status": m_stat, "Yearly Status": y_stat, "Total Paid (Rs.)": paid_amt
                 })
-            
-            total_expected = total_collected + total_remaining
-            
-            st.markdown("### 💰 Collection Overview")
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Total Expected", f"Rs. {total_expected:,}")
-            m2.metric(f"Total Collected ({report_month})", f"Rs. {total_collected:,}")
-            m3.metric("Total Remaining", f"Rs. {total_remaining:,}")
-            
-            if target_date_str:
-                m4.metric(f"Collected on {target_date_str}", f"Rs. {total_collected_on_date:,}")
-            else:
-                m4.metric("Today's Collection Filter", "Not Active")
-            
-            st.divider()
-            
-            if target_date_str:
-                display_data = [d for d in ledger_data if d["Paid Date"] == target_date_str]
-                st.write(f"Showing filtered ledger for **{report_class}** on **{target_date_str}** ({len(display_data)} records):")
-            else:
-                display_data = ledger_data
-                st.write(f"Showing complete ledger preview for **{report_class}** ({len(display_data)} students):")
-            
-            df_ledger = pd.DataFrame(display_data)
-            st.dataframe(df_ledger, use_container_width=True)
-            
-            csv_ledger = df_ledger.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Download Financial Ledger as CSV",
-                data=csv_ledger,
-                file_name=f"Financial_Ledger_{report_class.replace(' ', '_')}_{report_month.replace(' ', '_')}.csv",
-                mime="text/csv",
-                type="primary"
-            )
+            st.dataframe(pd.DataFrame(ledger_data), use_container_width=True)
 
 # ==================================================================
 # 5. ATTENDANCE SHEETS
@@ -1385,11 +1211,7 @@ elif menu_choice == "📅 Attendance Sheets":
 
     att_students = students if selected_att_class == "All Active Classes" else [s for s in students if s.get("class_name") == selected_att_class and s.get("status", "Active") == "Active"]
 
-    st.write(f"### Attendance Sheet Preview: {selected_att_class} ({att_month})")
-    
-    if not att_students:
-        st.info("No students found for attendance sheet generation.")
-    else:
+    if att_students:
         att_pdf_bytes = generate_monthly_attendance_pdf(selected_att_class, att_month, att_students)
         st.download_button(
             "📥 Click Here to Download PDF Attendance Sheet",
@@ -1398,31 +1220,3 @@ elif menu_choice == "📅 Attendance Sheets":
             mime="application/pdf",
             type="primary"
         )
-            
-        table_html = f'''
-        <div style="background: white; padding: 20px; border-radius: 10px; border: 1px solid #E0D8F0; overflow-x: auto;">
-            <h3 style="text-align: center; margin-bottom: 5px;">Excellence Model School - Monthly Attendance Sheet</h3>
-            <p style="text-align: center; color: #666; margin-top: 0;">Class: <b>{selected_att_class}</b> | Month: <b>{att_month}</b></p>
-            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                <thead>
-                    <tr style="background-color: #3F2B96; color: white;">
-                        <th style="border: 1px solid #ccc; padding: 6px; width: 80px;">GR No</th>
-                        <th style="border: 1px solid #ccc; padding: 6px; text-align: left;">Student Name</th>
-        '''
-        for d in range(1, 32):
-            table_html += f'<th style="border: 1px solid #ccc; padding: 4px; width: 22px; text-align: center;">{d}</th>'
-        table_html += "</tr></thead><tbody>"
-
-        for s in att_students:
-            s_name = clean_student_name(s.get("name", ""))
-            table_html += f'''
-                <tr>
-                    <td style="border: 1px solid #ccc; padding: 5px; text-align: center; font-weight: bold;">{s.get("gr_number", "—")}</td>
-                    <td style="border: 1px solid #ccc; padding: 5px;">{s_name}</td>
-            '''
-            for d in range(1, 32):
-                table_html += '<td style="border: 1px solid #ccc; padding: 5px;"></td>'
-            table_html += "</tr>"
-
-        table_html += "</tbody></table></div>"
-        st.markdown(table_html, unsafe_allow_html=True)
