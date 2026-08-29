@@ -17,33 +17,49 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-import streamlit as st
-# Aapki baqi libraries (pandas, supabase, etc.) yahan aayengi
-
-# 1. Session State Initialize karein
+# --- EMS 2026 LOGIN & DEMO GATE ---
 if "is_logged_in" not in st.session_state:
   st.session_state["is_logged_in"] = False
 if "is_demo" not in st.session_state:
   st.session_state["is_demo"] = False
 
-# 2. Agar login nahi hai toh login/demo screen dikhayein
 if not st.session_state["is_logged_in"]:
-  st.subheader("EMS 2026 - System Access")
-  col1, col2 = st.columns(2)
-  with col1:
-    # Purana password ya admin login yahan connect kar sakte hain
-    if st.button("Login as Admin"):
-      st.session_state["is_logged_in"] = True
-      st.session_state["is_demo"] = False
-      st.rerun()
-  with col2:
-    if st.button("View Live Demo (Read-Only)"):
-      st.session_state["is_logged_in"] = True
-      st.session_state["is_demo"] = True
-      st.rerun()
+  st.subheader("🎓 Excellence Model School - System Access")
 
-  # Yahan st.stop() lagana zaroori hai taake login se pehle aage ki app na khule
+  tab1, tab2 = st.tabs(["Admin Login", "Live Demo Mode"])
+
+  with tab1:
+    admin_pass = st.text_input(
+        "Enter Admin Password", type="password", key="admin_pass_input"
+    )
+    if st.button("Login"):
+      if admin_pass == "EMS2026":
+        st.session_state["is_logged_in"] = True
+        st.session_state["is_demo"] = False
+        st.success("Login Successful!")
+        st.rerun()
+      else:
+        st.error("Ghalat password! Baraye meharbani 'EMS2026' darj karein.")
+
+  with tab2:
+    st.write(
+        "Demo mode mein aap system ke sabhi features dekh sakte hain lekin koi"
+        " data change ya save nahi hoga."
+    )
+    demo_pass = st.text_input(
+        "Enter Demo Password", type="password", key="demo_pass_input"
+    )
+    if st.button("Start Demo"):
+      if demo_pass == "admin123":
+        st.session_state["is_logged_in"] = True
+        st.session_state["is_demo"] = True
+        st.success("Demo Mode Activated!")
+        st.rerun()
+      else:
+        st.error("Ghalat demo password! Baraye meharbani 'admin123' darj karein.")
+
   st.stop()
+# --- LOGIN GATE END ---
 
 # --- ISKE NEECHAY AAPKI ASAL APP KA CODE SHURU HOGA ---
 
