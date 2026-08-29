@@ -329,12 +329,10 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     pdf = FPDF(orientation='P', unit='mm', format='A5')
     pdf.add_page()
     
-    # Border box for Challan
     pdf.set_draw_color(63, 43, 150)
     pdf.set_line_width(0.8)
     pdf.rect(5, 5, 138, 200)
     
-    # School Header
     pdf.set_font("Arial", "B", 13)
     pdf.set_xy(10, 10)
     pdf.cell(128, 6, "EXCELLENCE MODEL SCHOOL", 0, 1, "C")
@@ -345,7 +343,6 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     pdf.set_line_width(0.3)
     pdf.line(10, 24, 133, 24)
     
-    # Challan Meta Info
     pdf.set_xy(10, 27)
     pdf.set_font("Arial", "B", 9)
     pdf.cell(30, 6, "Student ID:", 0, 0)
@@ -374,7 +371,6 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     pdf.set_font("Arial", "", 9)
     pdf.cell(98, 6, str(student.get("father_name", "")), 0, 1)
     
-    # Table of Fees
     pdf.ln(4)
     pdf.set_fill_color(63, 43, 150)
     pdf.set_text_color(255, 255, 255)
@@ -402,7 +398,6 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     pdf.cell(90, 8, "   Total Payable Amount", 1, 0, "L", True)
     pdf.cell(33, 8, f"Rs. {total_due:,}   ", 1, 1, "R", True)
     
-    # Instructions & Signatures
     pdf.ln(10)
     pdf.set_font("Arial", "B", 8)
     pdf.cell(123, 5, "Instructions:", 0, 1, "L")
@@ -580,19 +575,29 @@ elif menu_choice == "🎓 Student Admissions":
     with tab_single:
         with st.form("student_admission_form", clear_on_submit=True):
             st.subheader("New Student Registration Form")
-            sc1, sc2 = st.columns(2)
             
+            sc1, sc2 = st.columns(2)
             with sc1:
                 std_name = st.text_input("Student Full Name *")
                 std_father = st.text_input("Father's Name *")
                 std_class = st.selectbox("Assign Class", class_sequence)
+                std_gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                std_dob = st.text_input("Date of Birth (e.g. 15-Aug-2020)")
+                std_bform = st.text_input("B-Form / CNIC Number")
                 
             with sc2:
                 std_fee = st.number_input("Monthly Fee Amount (Rs.)", min_value=0, value=3500, step=500)
                 std_yearly_fee = st.number_input("Yearly Fee / Annual Charges (Rs.)", min_value=0, value=5000, step=500)
+                contact_1 = st.text_input("Primary Contact (Contact 1) *")
+                contact_2 = st.text_input("Secondary Contact (Contact 2)")
+                whatsapp_no = st.text_input("WhatsApp Number *")
+                blood_group = st.selectbox("Blood Group", ["Unknown", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"])
+            
+            address = st.text_area("Residential Address *")
+            prev_school = st.text_input("Previous School / Last Attended Class (if any)")
                 
             if st.form_submit_button("Register Student", type="primary"):
-                if std_name.strip() and std_father.strip():
+                if std_name.strip() and std_father.strip() and contact_1.strip() and whatsapp_no.strip() and address.strip():
                     try:
                         new_s_id = next_student_id(students)
                         student_data = {
@@ -602,7 +607,16 @@ elif menu_choice == "🎓 Student Admissions":
                             "class_name": std_class,
                             "monthly_fee": std_fee,
                             "yearly_fee": std_yearly_fee,
-                            "status": "Active"
+                            "status": "Active",
+                            "contact_1": contact_1.strip(),
+                            "contact_2": contact_2.strip(),
+                            "whatsapp": whatsapp_no.strip(),
+                            "address": address.strip(),
+                            "dob": std_dob.strip(),
+                            "gender": std_gender,
+                            "b_form": std_bform.strip(),
+                            "blood_group": blood_group,
+                            "previous_school": prev_school.strip()
                         }
                         add_student(student_data)
                         st.success(f"Student {std_name} ({new_s_id}) successfully enrolled in {std_class}!")
@@ -610,7 +624,7 @@ elif menu_choice == "🎓 Student Admissions":
                     except Exception as e:
                         st.error(f"Error saving student: {e}")
                 else:
-                    st.warning("Please fill in Student Name and Father's Name.")
+                    st.warning("Please fill in all mandatory fields (*): Student Name, Father's Name, Contact 1, WhatsApp Number, and Address.")
 
     with tab_bulk:
         st.subheader("📁 Bulk Import / Export Students (CSV)")
@@ -620,7 +634,7 @@ elif menu_choice == "🎓 Student Admissions":
         with col_ex1:
             if students:
                 df_export = pd.DataFrame(students)
-                expected_cols = ["id", "name", "father_name", "class_name", "monthly_fee", "yearly_fee", "status"]
+                expected_cols = ["id", "name", "father_name", "class_name", "monthly_fee", "yearly_fee", "status", "contact_1", "contact_2", "whatsapp", "address", "dob", "gender", "b_form", "blood_group", "previous_school"]
                 existing_cols = [c for c in expected_cols if c in df_export.columns]
                 csv_data = df_export[existing_cols].to_csv(index=False).encode('utf-8')
                 st.download_button(
@@ -640,7 +654,16 @@ elif menu_choice == "🎓 Student Admissions":
                 "class_name": class_sequence[0] if class_sequence else "Class 1",
                 "monthly_fee": 3500,
                 "yearly_fee": 5000,
-                "status": "Active"
+                "status": "Active",
+                "contact_1": "03001234567",
+                "contact_2": "03219876543",
+                "whatsapp": "03001234567",
+                "address": "House 123, Street 4, Karachi",
+                "dob": "12-Jan-2018",
+                "gender": "Male",
+                "b_form": "42101-1234567-1",
+                "blood_group": "B+",
+                "previous_school": "None"
             }])
             template_csv = template_df.to_csv(index=False).encode('utf-8')
             st.download_button(
@@ -684,7 +707,16 @@ elif menu_choice == "🎓 Student Admissions":
                             "class_name": class_val,
                             "monthly_fee": m_fee_val,
                             "yearly_fee": y_fee_val,
-                            "status": status_val if status_val in ["Active", "Graduated"] else "Active"
+                            "status": status_val if status_val in ["Active", "Graduated"] else "Active",
+                            "contact_1": str(row.get("contact_1", "")).strip(),
+                            "contact_2": str(row.get("contact_2", "")).strip(),
+                            "whatsapp": str(row.get("whatsapp", "")).strip(),
+                            "address": str(row.get("address", "")).strip(),
+                            "dob": str(row.get("dob", "")).strip(),
+                            "gender": str(row.get("gender", "Male")).strip(),
+                            "b_form": str(row.get("b_form", "")).strip(),
+                            "blood_group": str(row.get("blood_group", "Unknown")).strip(),
+                            "previous_school": str(row.get("previous_school", "")).strip()
                         }).execute()
                         success_count += 1
                         
@@ -809,7 +841,7 @@ elif menu_choice == "💳 Fee Management":
                 with st.container(border=True):
                     cols = st.columns([3, 2, 2, 2])
                     display_title = f"**{s_name}** (`{s_id}`)" + (f" — *Class: {s_cls}*" if selected_class_fee == "All Active Classes" else "")
-                    cols[0].markdown(display_title + f"\nFather: {s.get('father_name','—')}")
+                    cols[0].markdown(display_title + f"<br>Father: {s.get('father_name','—')} | Cont: {s.get('contact_1','—')}", unsafe_allow_html=True)
                     cols[1].markdown(f"Monthly: **Rs. {m_fee:,}**")
                     cols[2].markdown(f"Yearly: **Rs. {y_fee:,}**")
                     
@@ -937,6 +969,8 @@ elif menu_choice == "💳 Fee Management":
                     "Student ID": s_id,
                     "Student Name": s.get("name"),
                     "Father's Name": s.get("father_name", "—"),
+                    "Contact 1": s.get("contact_1", "—"),
+                    "WhatsApp": s.get("whatsapp", "—"),
                     "Class": s.get("class_name"),
                     "Monthly Fee Status": m_stat,
                     "Yearly Fee Status": y_stat,
@@ -947,7 +981,6 @@ elif menu_choice == "💳 Fee Management":
             
             total_expected = total_collected + total_remaining
             
-            # --- Metrics Dashboard ---
             st.markdown("### 💰 Collection Overview")
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Total Expected", f"Rs. {total_expected:,}")
@@ -961,7 +994,6 @@ elif menu_choice == "💳 Fee Management":
             
             st.divider()
             
-            # --- Table Data ---
             if target_date_str:
                 display_data = [d for d in ledger_data if d["Paid Date"] == target_date_str]
                 st.write(f"Showing filtered ledger for **{report_class}** on **{target_date_str}** ({len(display_data)} records):")
@@ -996,13 +1028,7 @@ elif menu_choice == "📅 Attendance Sheets":
     selected_att_class = att_c1.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="att_class_select")
     att_month = att_c2.text_input("Attendance Month & Year", value=datetime.now().strftime("%B %Y"), key="att_month_input")
 
-    att_c1, att_c2 = st.columns(2)
-    selected_att_class = att_c1.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="att_class_select")
-    att_month = att_c2.text_input("Attendance Month & Year", value=datetime.now().strftime("%B %Y"), key="att_month_input")
-
     att_students = students if selected_att_class == "All Active Classes" else [s for s in students if s.get("class_name") == selected_att_class and s.get("status", "Active") == "Active"]
-
-    st.write(f"### Attendance Sheet Preview: {selected_att_class} ({att_month})")
 
     st.write(f"### Attendance Sheet Preview: {selected_att_class} ({att_month})")
     
