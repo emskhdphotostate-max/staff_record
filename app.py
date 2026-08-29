@@ -996,7 +996,7 @@ elif menu_choice == "📅 Attendance Sheets":
     selected_att_class = att_c1.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="att_class_select")
     att_month = att_c2.text_input("Attendance Month & Year", value=datetime.now().strftime("%B %Y"), key="att_month_input")
 
-    att_students = students if selected_att_class == "All Active Classes" else [s for s in students if s.get("class_name") == selected_att_class and s.get("status", "Active") == "Active"]
+    att_students = students if selected_att_class == "All Active Classes" else [s for s in students if s.get("class_name") == selected_att_class and s.get("status", "Active"] == "Active"]
 
     st.write(f"### Attendance Sheet Preview: {selected_att_class} ({att_month})")
     
