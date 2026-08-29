@@ -6,7 +6,6 @@ import os
 import base64
 import pandas as pd
 from datetime import datetime
-import io
 
 # ------------------------------------------------------------------
 # Page setup
@@ -210,6 +209,9 @@ def add_student(record):
     if "status" not in record:
         record["status"] = "Active"
     sb.table("students").insert(record).execute()
+
+def update_student(student_id, record):
+    sb.table("students").update(record).eq("id", student_id).execute()
 
 def fetch_fee_record(student_id, month_year):
     res = sb.table("fee_records").select("*").eq("student_id", student_id).eq("month_year", month_year).execute()
@@ -570,7 +572,7 @@ elif menu_choice == "🎓 Student Admissions":
     </div>
     ''', unsafe_allow_html=True)
     
-    tab_single, tab_bulk, tab_promo, tab_classes = st.tabs(["➕ Single Admission", "📥 CSV / Excel Import & Export", "🚀 Annual Class Promotion", "🏫 Manage Classes"])
+    tab_single, tab_edit, tab_bulk, tab_promo, tab_classes = st.tabs(["➕ Single Admission", "✏️ Edit & Search Student", "📥 CSV / Excel Import & Export", "🚀 Annual Class Promotion", "🏫 Manage Classes"])
     
     with tab_single:
         with st.form("student_admission_form", clear_on_submit=True):
@@ -637,6 +639,107 @@ elif menu_choice == "🎓 Student Admissions":
                         st.error(f"Error saving student: {e}")
                 else:
                     st.warning("Please fill in all mandatory fields (*): Student Name, Father's Name, Contact 1, WhatsApp Number, and Address.")
+
+    with tab_edit:
+        st.subheader("🔍 Search & Edit Student Record (Update Picture & Details)")
+        search_query = st.text_input("Search Student by Name, ID, or Phone Number", placeholder="e.g. Ali, STD-001, 0300...")
+        
+        filtered_search_list = []
+        if search_query.strip():
+            q = search_query.strip().lower()
+            filtered_search_list = [s for s in students if any(q in (str(v) or "").lower() for v in [s.get("id"), s.get("name"), s.get("contact_1"), s.get("whatsapp")])]
+        
+        if search_query.strip() and not filtered_search_list:
+            st.info("No matching students found.")
+        elif filtered_search_list:
+            student_choice_options = {f"{s['name']} (ID: {s['id']} | Class: {s.get('class_name','—')})": s for s in filtered_search_list}
+            selected_edit_label = st.selectbox("Select Student to Edit", list(student_choice_options.keys()))
+            sel_s = student_choice_options[selected_edit_label]
+            
+            st.divider()
+            
+            # Display current student picture if available
+            col_img, col_det = st.columns([1, 3])
+            with col_img:
+                st.write("### Current Photo")
+                p_url = sel_s.get("photo_url")
+                if p_url and p_url.startswith("data:image"):
+                    st.markdown(f'<img src="{p_url}" width="120" style="border-radius: 8px; border: 2px solid #3F2B96;" />', unsafe_allow_html=True)
+                else:
+                    st.markdown('<div style="font-size: 60px;">👤</div>', unsafe_allow_html=True)
+                    st.write("No photo uploaded")
+            
+            with col_det:
+                st.markdown(f"**Student ID:** `{sel_s.get('id')}`")
+                st.markdown(f"**Current Class:** {sel_s.get('class_name')}")
+                st.markdown(f"**Status:** {sel_s.get('status', 'Active')}")
+            
+            st.write("### Update Student Details & Photograph")
+            with st.form(f"edit_student_form_{sel_s['id']}"):
+                ec1, ec2 = st.columns(2)
+                with ec1:
+                    e_name = st.text_input("Student Full Name *", value=sel_s.get("name", ""))
+                    e_father = st.text_input("Father's Name *", value=sel_s.get("father_name", ""))
+                    
+                    # Class selection index safely
+                    curr_cls = sel_s.get("class_name", class_sequence[0] if class_sequence else "")
+                    cls_idx = class_sequence.index(curr_cls) if curr_cls in class_sequence else 0
+                    e_class = st.selectbox("Assign Class", class_sequence, index=cls_idx)
+                    
+                    genders = ["Male", "Female", "Other"]
+                    g_idx = genders.index(sel_s.get("gender", "Male")) if sel_s.get("gender", "Male") in genders else 0
+                    e_gender = st.selectbox("Gender", genders, index=g_idx)
+                    
+                    e_dob = st.text_input("Date of Birth", value=sel_s.get("dob", ""))
+                    e_bform = st.text_input("B-Form / CNIC Number", value=sel_s.get("b_form", ""))
+                    
+                with ec2:
+                    e_fee = st.number_input("Monthly Fee Amount (Rs.)", min_value=0, value=int(sel_s.get("monthly_fee", 3500) or 3500), step=500)
+                    e_yearly_fee = st.number_input("Yearly Fee / Annual Charges (Rs.)", min_value=0, value=int(sel_s.get("yearly_fee", 5000) or 5000), step=500)
+                    e_contact1 = st.text_input("Primary Contact (Contact 1) *", value=sel_s.get("contact_1", ""))
+                    e_contact2 = st.text_input("Secondary Contact (Contact 2)", value=sel_s.get("contact_2", ""))
+                    e_whatsapp = st.text_input("WhatsApp Number *", value=sel_s.get("whatsapp", ""))
+                    
+                    blood_groups = ["Unknown", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+                    bg_idx = blood_groups.index(sel_s.get("blood_group", "Unknown")) if sel_s.get("blood_group", "Unknown") in blood_groups else 0
+                    e_blood = st.selectbox("Blood Group", blood_groups, index=bg_idx)
+                
+                e_address = st.text_area("Residential Address *", value=sel_s.get("address", ""))
+                e_prev_school = st.text_input("Previous School / Last Attended Class", value=sel_s.get("previous_school", ""))
+                
+                # New Picture uploader for update
+                new_uploaded_photo = st.file_uploader("Upload New Student Photograph (JPG/PNG) - Leave empty to keep existing", type=["jpg", "jpeg", "png"])
+                
+                if st.form_submit_button("Update Student Record", type="primary"):
+                    try:
+                        final_photo_url = sel_s.get("photo_url", "")
+                        if new_uploaded_photo is not None:
+                            b_data = new_uploaded_photo.getvalue()
+                            enc_img = base64.b64encode(b_data).decode('utf-8')
+                            final_photo_url = f"data:image/{new_uploaded_photo.type.split('/')[-1]};base64,{enc_img}"
+                        
+                        updated_payload = {
+                            "name": e_name.strip(),
+                            "father_name": e_father.strip(),
+                            "class_name": e_class,
+                            "monthly_fee": e_fee,
+                            "yearly_fee": e_yearly_fee,
+                            "contact_1": e_contact1.strip(),
+                            "contact_2": e_contact2.strip(),
+                            "whatsapp": e_whatsapp.strip(),
+                            "address": e_address.strip(),
+                            "dob": e_dob.strip(),
+                            "gender": e_gender,
+                            "b_form": e_bform.strip(),
+                            "blood_group": e_blood,
+                            "previous_school": e_prev_school.strip(),
+                            "photo_url": final_photo_url
+                        }
+                        update_student(sel_s["id"], updated_payload)
+                        st.success(f"Student {e_name} ({sel_s['id']}) updated successfully!")
+                        st.rerun()
+                    except Exception as ex:
+                        st.error(f"Error updating student: {ex}")
 
     with tab_bulk:
         st.subheader("📁 Bulk Import / Export Students (CSV)")
@@ -1048,7 +1151,7 @@ elif menu_choice == "📅 Attendance Sheets":
     if not att_students:
         st.info("No students found for attendance sheet generation.")
     else:
-        att_pdf_bytes = generate_monthly_attendance_pdf(selected_att_class,att_month, att_students)
+        att_pdf_bytes = generate_monthly_attendance_pdf(selected_att_class, att_month, att_students)
         st.download_button(
             "📥 Click Here to Download PDF Attendance Sheet",
             data=att_pdf_bytes,
