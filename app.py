@@ -43,7 +43,7 @@ if not st.session_state["is_logged_in"]:
 
   with tab2:
     st.write(
-        "Demo mode mein aap system ke sabhi features dekh sakte hain lekin koi"
+        "In Demo Mode, you can explore all system features, but no data changes or saves will be permanently stored."
         " data change ya save nahi hoga."
     )
     demo_pass = st.text_input(
