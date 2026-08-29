@@ -284,7 +284,7 @@ def fetch_generated_challans(month_year):
         return []
 
 # ------------------------------------------------------------------
-# PDF Functions (Safe Encoding)
+# PDF Functions (Safe Encoding & Base64 Image Processing)
 # ------------------------------------------------------------------
 def generate_staff_pdf(data_rows, custom_fields_list):
     pdf = FPDF()
@@ -467,10 +467,32 @@ def generate_id_cards_pdf(students_list):
         pdf.rect(x_start + 10, y_start + 24, 28, 35)
         
         p_url = s.get("photo_url", "")
-        if not p_url:
+        temp_img_path = None
+        
+        if p_url and p_url.startswith("data:image"):
+            try:
+                header, encoded = p_url.split(",", 1)
+                img_data = base64.b64decode(encoded)
+                ext = "png" if "png" in header else "jpg"
+                temp_img_path = f"temp_std_{s.get('id')}.{ext}"
+                
+                with open(temp_img_path, "wb") as fh:
+                    fh.write(img_data)
+                
+                pdf.image(temp_img_path, x=x_start + 10.2, y=y_start + 24.2, w=27.6, h=34.6)
+            except Exception:
+                pass
+                
+        if not temp_img_path or not os.path.exists(temp_img_path):
             pdf.set_xy(x_start + 10, y_start + 38)
             pdf.set_font("Arial", "", 8)
             pdf.cell(28, 5, safe_text("NO PHOTO"), 0, 0, "C")
+            
+        if temp_img_path and os.path.exists(temp_img_path):
+            try:
+                os.remove(temp_img_path)
+            except Exception:
+                pass
             
         # Student Details Layout
         pdf.set_xy(x_start + 42, y_start + 24)
@@ -900,8 +922,7 @@ elif menu_choice == "🎓 Student Admissions":
                     label=f"📥 Download ID Card for {selected_ind_obj['name']} (.PDF)",
                     data=ind_pdf_bytes,
                     file_name=f"ID_Card_{selected_ind_obj['id']}.pdf",
-                    mime="application/pdf",
-                    type="primary",
+                    mime="primary",
                     use_container_width=True
                 )
 
