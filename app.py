@@ -11,20 +11,20 @@ from datetime import datetime
 # Page setup
 # ------------------------------------------------------------------
 st.set_page_config(
-    page_title="Excellence Model School — Management System",
+    page_title="ABC School — Management System",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- EMS 2026 LOGIN & DEMO GATE ---
+# --- ABC School LOGIN & DEMO GATE ---
 if "is_logged_in" not in st.session_state:
   st.session_state["is_logged_in"] = False
 if "is_demo" not in st.session_state:
   st.session_state["is_demo"] = False
 
 if not st.session_state["is_logged_in"]:
-  st.subheader("🎓 Excellence Model School - System Access")
+  st.subheader("🎓 ABC School - System Access")
 
   tab1, tab2 = st.tabs(["Admin Login", "Live Demo Mode"])
 
@@ -306,7 +306,7 @@ def generate_staff_pdf(data_rows, custom_fields_list):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, safe_text("Excellence Model School - Staff Report"), 0, 1, "C")
+    pdf.cell(0, 10, safe_text("ABC School - Staff Report"), 0, 1, "C")
     pdf.set_font("Arial", "", 10)
     pdf.cell(0, 8, safe_text(f"Total Records: {len(data_rows)}"), 0, 1, "C")
     pdf.ln(5)
@@ -325,7 +325,7 @@ def generate_monthly_attendance_pdf(class_name, month_year_str, students_list):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 8, safe_text("Excellence Model School - Monthly Attendance Sheet"), 0, 1, "C")
+    pdf.cell(0, 8, safe_text("ABC School - Monthly Attendance Sheet"), 0, 1, "C")
     pdf.set_font("Arial", "B", 11)
     pdf.cell(0, 6, safe_text(f"Class: {class_name}    |    Month: {month_year_str}"), 0, 1, "C")
     pdf.ln(4)
@@ -358,7 +358,7 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     
     pdf.set_font("Arial", "B", 13)
     pdf.set_xy(10, 10)
-    pdf.cell(128, 6, safe_text("EXCELLENCE MODEL SCHOOL"), 0, 1, "C")
+    pdf.cell(128, 6, safe_text("ABC SCHOOL"), 0, 1, "C")
     pdf.set_font("Arial", "", 9)
     pdf.cell(128, 5, safe_text("Fee Payment Challan / Voucher"), 0, 1, "C")
     
@@ -466,7 +466,7 @@ def generate_id_cards_pdf(students_list):
         pdf.set_xy(x_start, y_start + 3)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(150, 6, safe_text("EXCELLENCE MODEL SCHOOL"), 0, 1, "C")
+        pdf.cell(150, 6, safe_text("ABC SCHOOL"), 0, 1, "C")
         pdf.set_font("Arial", "", 8)
         pdf.set_xy(x_start, y_start + 10)
         pdf.cell(150, 4, safe_text("STUDENT IDENTITY CARD"), 0, 1, "C")
@@ -579,7 +579,7 @@ with st.sidebar:
     else:
         st.markdown("<div style='font-size: 38px; text-align: center;'>🎓</div>", unsafe_allow_html=True)
     
-    st.markdown("<h3 style='text-align: center; color: white; margin-top: 5px; font-size: 16px;'>EXCELLENCE MODEL SCHOOL</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: white; margin-top: 5px; font-size: 16px;'>ABC SCHOOL</h3>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #D4C5F9; font-size: 11px; margin-bottom: 20px;'>Enterprise Management ERP</p>", unsafe_allow_html=True)
     st.divider()
 
