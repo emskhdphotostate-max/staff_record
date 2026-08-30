@@ -61,22 +61,22 @@ if not st.session_state["is_logged_in"]:
   st.stop()
 # --- LOGIN GATE END ---
 
-# Custom CSS matching the second image (Deep Gradient with Red/Pink & Dark Blue/Purple)
+# Custom CSS for Professional Dashboard Theme
 st.markdown('''
 <style>
-    .stApp { background-color: #0c0816; color: #f0f0f0; }
+    .stApp { background-color: #F4F5F8; }
     .block-container { padding-top: 1.5rem !important; }
     
-    /* Sidebar Styling - Matching Image 2 Gradient */
+    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
-        background: radial-gradient(circle at 0% 0%, #b80d57 0%, #100b2b 45%, #080517 100%);
+        background: linear-gradient(180deg, #2B1A63 0%, #1A103C 100%);
         color: white;
     }
     section[data-testid="stSidebar"] .stButton>button {
         width: 100%;
-        background: rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.08);
         color: white;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 6px;
         text-align: left;
         font-weight: 500;
@@ -84,18 +84,18 @@ st.markdown('''
         transition: all 0.3s ease;
     }
     section[data-testid="stSidebar"] .stButton>button:hover {
-        background: rgba(184, 13, 87, 0.4);
-        border-color: #ff3366;
+        background: #3F2B96;
+        border-color: #ffffff;
     }
 
-    /* Top Banner Header - Matching Image 2 Gradient */
+    /* Top Banner Header */
     .dashboard-header {
-        background: radial-gradient(circle at 100% 50%, #b80d57 0%, #160d36 50%, #0d0821 100%);
+        background: linear-gradient(135deg, #3F2B96 0%, #1A103C 100%);
         padding: 22px 30px;
         border-radius: 10px;
         color: white;
         margin-bottom: 25px;
-        box-shadow: 0 4px 20px rgba(184, 13, 87, 0.25);
+        box-shadow: 0 4px 15px rgba(63, 43, 150, 0.2);
     }
     .dashboard-header h1 {
         margin: 0;
@@ -106,17 +106,17 @@ st.markdown('''
 
     /* Cards & Containers */
     div[data-testid="stForm"] {
-        border: 1px solid #2a1b4e;
+        border: 1px solid #E0D8F0;
         border-radius: 10px;
         padding: 20px;
-        background: #140e2b;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        background: white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
     }
     
     .ems-badge {
         display: inline-block;
-        background: #b80d57;
-        color: #ffffff;
+        background: #1A103C;
+        color: #E7D6F7;
         border-radius: 15px;
         padding: 2px 10px;
         font-size: 11px;
@@ -352,7 +352,7 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     pdf = FPDF(orientation='P', unit='mm', format='A5')
     pdf.add_page()
     
-    pdf.set_draw_color(184, 13, 87)
+    pdf.set_draw_color(63, 43, 150)
     pdf.set_line_width(0.8)
     pdf.rect(5, 5, 138, 200)
     
@@ -395,7 +395,7 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     pdf.cell(98, 6, safe_text(str(student.get("father_name", ""))), 0, 1)
     
     pdf.ln(4)
-    pdf.set_fill_color(184, 13, 87)
+    pdf.set_fill_color(63, 43, 150)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("Arial", "B", 9)
     pdf.cell(90, 7, safe_text("  Fee Particulars"), 1, 0, "L", True)
@@ -450,11 +450,11 @@ def generate_id_cards_pdf(students_list):
             
         x_start = 30
         
-        pdf.set_draw_color(184, 13, 87)
+        pdf.set_draw_color(63, 43, 150)
         pdf.set_line_width(0.8)
         pdf.rect(x_start, y_start, 150, 88)
         
-        pdf.set_fill_color(184, 13, 87)
+        pdf.set_fill_color(63, 43, 150)
         pdf.rect(x_start, y_start, 150, 20, 'F')
         
         if logo_path and os.path.exists(logo_path):
@@ -580,10 +580,10 @@ with st.sidebar:
         st.markdown("<div style='font-size: 38px; text-align: center;'>🎓</div>", unsafe_allow_html=True)
     
     st.markdown("<h3 style='text-align: center; color: white; margin-top: 5px; font-size: 16px;'>ABC SCHOOL</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #ffb3c6; font-size: 11px; margin-bottom: 20px;'>Enterprise Management ERP</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #D4C5F9; font-size: 11px; margin-bottom: 20px;'>Enterprise Management ERP</p>", unsafe_allow_html=True)
     st.divider()
 
-    st.markdown("<p style='color: #ffb3c6; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Main Navigation</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #D4C5F9; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Main Navigation</p>", unsafe_allow_html=True)
     
     if "selected_menu" not in st.session_state:
         st.session_state["selected_menu"] = "📊 Dashboard Overview"
@@ -615,7 +615,7 @@ if menu_choice == "📊 Dashboard Overview":
     st.markdown('''
     <div class="dashboard-header">
         <h1>Dashboard & Quick Statistics</h1>
-        <p style="margin:4px 0 0 0; color:#ffb3c6; font-size:13px;">Real-time summary of school operations and cloud metrics</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Real-time summary of school operations and cloud metrics</p>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -650,7 +650,7 @@ elif menu_choice == "👥 Staff Management":
     st.markdown('''
     <div class="dashboard-header">
         <h1>Staff Management & Directory</h1>
-        <p style="margin:4px 0 0 0; color:#ffb3c6; font-size:13px;">Manage faculty, designations, campuses and employee records</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Manage faculty, designations, campuses and employee records</p>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -713,7 +713,7 @@ elif menu_choice == "🎓 Student Admissions":
     st.markdown('''
     <div class="dashboard-header">
         <h1>Student Admissions & Class Records</h1>
-        <p style="margin:4px 0 0 0; color:#ffb3c6; font-size:13px;">Register students, manage fees, CSV import/export, and annual class promotions</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Register students, manage fees, CSV import/export, and annual class promotions</p>
     </div>
     ''', unsafe_allow_html=True)
     
@@ -815,7 +815,7 @@ elif menu_choice == "🎓 Student Admissions":
                 st.write("### Current Photo")
                 p_url = sel_s.get("photo_url")
                 if p_url and p_url.startswith("data:image"):
-                    st.markdown(f'<img src="{p_url}" width="120" style="border-radius: 8px; border: 2px solid #b80d57;" />', unsafe_allow_html=True)
+                    st.markdown(f'<img src="{p_url}" width="120" style="border-radius: 8px; border: 2px solid #3F2B96;" />', unsafe_allow_html=True)
                 else:
                     st.markdown('<div style="font-size: 60px;">👤</div>', unsafe_allow_html=True)
                     st.write("No photo uploaded")
@@ -1095,7 +1095,7 @@ elif menu_choice == "💳 Fee Management":
     st.markdown('''
     <div class="dashboard-header">
         <h1>Fee Management & Ledgers</h1>
-        <p style="margin:4px 0 0 0; color:#ffb3c6; font-size:13px;">Manage student dues, fee payments, and financial collection reports</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Manage student dues, fee payments, and financial collection reports</p>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -1201,7 +1201,7 @@ elif menu_choice == "📅 Attendance Sheets":
     st.markdown('''
     <div class="dashboard-header">
         <h1>Monthly Attendance Sheets</h1>
-        <p style="margin:4px 0 0 0; color:#ffb3c6; font-size:13px;">Generate and print monthly attendance registers for any class</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Generate and print monthly attendance registers for any class</p>
     </div>
     ''', unsafe_allow_html=True)
 
