@@ -17,114 +17,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- ABC School LOGIN & DEMO GATE ---
-if "is_logged_in" not in st.session_state:
-  st.session_state["is_logged_in"] = False
-if "is_demo" not in st.session_state:
-  st.session_state["is_demo"] = False
-
-if not st.session_state["is_logged_in"]:
-  st.subheader("🎓 ABC School - System Access")
-
-  tab1, tab2 = st.tabs(["Admin Login", "Live Demo Mode"])
-
-  with tab1:
-    admin_pass = st.text_input(
-        "Enter Admin Password", type="password", key="admin_pass_input"
-    )
-    if st.button("Login"):
-      if admin_pass == "EMS2026":
-        st.session_state["is_logged_in"] = True
-        st.session_state["is_demo"] = False
-        st.success("Login Successful!")
-        st.rerun()
-      else:
-        st.error("Ghalat password! Baraye meharbani 'EMS2026' darj karein.")
-
-  with tab2:
-    st.write(
-        "In Demo Mode, you can explore all system features, but no data changes or saves will be permanently stored."
-        "Data modifications or saves are not allowed."
-    )
-    demo_pass = st.text_input(
-        "Enter Demo Password", type="password", key="demo_pass_input"
-    )
-    if st.button("Start Demo"):
-      if demo_pass == "admin123":
-        st.session_state["is_logged_in"] = True
-        st.session_state["is_demo"] = True
-        st.success("Demo Mode Activated!")
-        st.rerun()
-      else:
-        st.error("Ghalat demo password! Baraye meharbani 'admin123' darj karein.")
-
-  st.stop()
-# --- LOGIN GATE END ---
-
-# Custom CSS for Professional Dashboard Theme
-st.markdown('''
-<style>
-    .stApp { background-color: #F4F5F8; }
-    .block-container { padding-top: 1.5rem !important; }
-    
-    /* Sidebar Styling */
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #2B1A63 0%, #1A103C 100%);
-        color: white;
-    }
-    section[data-testid="stSidebar"] .stButton>button {
-        width: 100%;
-        background: rgba(255, 255, 255, 0.08);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 6px;
-        text-align: left;
-        font-weight: 500;
-        margin-bottom: 4px;
-        transition: all 0.3s ease;
-    }
-    section[data-testid="stSidebar"] .stButton>button:hover {
-        background: #3F2B96;
-        border-color: #ffffff;
-    }
-
-    /* Top Banner Header */
-    .dashboard-header {
-        background: linear-gradient(135deg, #3F2B96 0%, #1A103C 100%);
-        padding: 22px 30px;
-        border-radius: 10px;
-        color: white;
-        margin-bottom: 25px;
-        box-shadow: 0 4px 15px rgba(63, 43, 150, 0.2);
-    }
-    .dashboard-header h1 {
-        margin: 0;
-        font-size: 26px !important;
-        font-weight: 800;
-        letter-spacing: 0.5px;
-    }
-
-    /* Cards & Containers */
-    div[data-testid="stForm"] {
-        border: 1px solid #E0D8F0;
-        border-radius: 10px;
-        padding: 20px;
-        background: white;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-    }
-    
-    .ems-badge {
-        display: inline-block;
-        background: #1A103C;
-        color: #E7D6F7;
-        border-radius: 15px;
-        padding: 2px 10px;
-        font-size: 11px;
-        font-weight: 700;
-    }
-</style>
-''', unsafe_allow_html=True)
-
 def get_logo_path():
     for filename in ["LOGO.png", "logo.png", "Logo.png"]:
         if os.path.exists(filename):
@@ -136,6 +28,235 @@ def get_image_base64(path):
         with open(path, "rb") as f:
             return base64.b64encode(f.read()).decode()
     return None
+
+# --- ABC School LOGIN & DEMO GATE ---
+if "is_logged_in" not in st.session_state:
+  st.session_state["is_logged_in"] = False
+if "is_demo" not in st.session_state:
+  st.session_state["is_demo"] = False
+
+if not st.session_state["is_logged_in"]:
+    st.markdown('''
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+        html, body, [class*="css"] { font-family: 'Poppins', sans-serif; }
+        [data-testid="stSidebar"], [data-testid="stHeader"] { display: none; }
+        .stApp {
+            background: radial-gradient(circle at 15% 15%, #5A3FC0 0%, transparent 40%),
+                        radial-gradient(circle at 85% 85%, #9B4DFF 0%, transparent 40%),
+                        linear-gradient(135deg, #1A103C 0%, #2B1A63 55%, #3F2B96 100%);
+            background-attachment: fixed;
+        }
+        .block-container { padding-top: 4vh !important; max-width: 460px; }
+        .login-card {
+            background: rgba(255,255,255,0.98);
+            border-radius: 22px;
+            padding: 38px 34px 26px 34px;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.40);
+            border: 1px solid rgba(255,255,255,0.25);
+        }
+        .login-logo-wrap { text-align:center; margin-bottom: 4px; }
+        .login-logo-wrap img {
+            width: 88px; height: 88px; object-fit: cover; border-radius: 50%;
+            box-shadow: 0 8px 22px rgba(63,43,150,0.4); border: 3px solid #fff;
+        }
+        .login-title { text-align:center; color:#1A103C; font-size: 23px; font-weight: 800; margin: 14px 0 2px 0; }
+        .login-subtitle {
+            text-align:center; color:#8B7FB8; font-size: 11.5px; font-weight: 700;
+            letter-spacing: 1.2px; margin-bottom: 24px; text-transform: uppercase;
+        }
+        .demo-note {
+            background:#F4F2FB; border-left:4px solid #7b2ff7; padding:10px 14px;
+            border-radius:8px; font-size:12.5px; color:#4A3F70; margin-bottom:14px; line-height:1.5;
+        }
+        .stTabs [data-baseweb="tab-list"] { gap: 4px; background:#F1EEFB; padding:5px; border-radius:10px; }
+        .stTabs [data-baseweb="tab"] { border-radius: 8px; font-weight:600; color:#5B4E8A; }
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(135deg,#7b2ff7,#3F2B96) !important; color:white !important;
+        }
+        .login-card .stTextInput input { border-radius: 10px; }
+        .login-card .stButton>button {
+            background: linear-gradient(135deg, #7b2ff7, #3F2B96);
+            color: white; border: none; border-radius: 10px; font-weight: 700;
+            padding: 10px 0; box-shadow: 0 6px 18px rgba(123,47,247,0.35);
+            transition: transform 0.15s ease;
+        }
+        .login-card .stButton>button:hover { transform: translateY(-2px); }
+        .login-footer { text-align:center; color:#D4C5F9; font-size:11px; margin-top:20px; letter-spacing:0.3px; }
+    </style>
+    ''', unsafe_allow_html=True)
+
+    st.markdown('<div class="login-card">', unsafe_allow_html=True)
+
+    logo_b64 = get_image_base64(get_logo_path())
+    if logo_b64:
+        st.markdown(f'<div class="login-logo-wrap"><img src="data:image/png;base64,{logo_b64}" /></div>', unsafe_allow_html=True)
+    else:
+        st.markdown("<div style='text-align:center; font-size:52px;'>🎓</div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="login-title">ABC School — System Access</div>', unsafe_allow_html=True)
+    st.markdown('<div class="login-subtitle">Enterprise Management ERP &nbsp;·&nbsp; Secure Portal</div>', unsafe_allow_html=True)
+
+    tab1, tab2 = st.tabs(["🔐  Admin Login", "🧪  Live Demo Mode"])
+
+    with tab1:
+        admin_pass = st.text_input(
+            "Enter Admin Password", type="password", key="admin_pass_input",
+            placeholder="Enter your admin password"
+        )
+        if st.button("Login to Dashboard", use_container_width=True, key="admin_login_btn"):
+            if admin_pass == "EMS2026":
+                st.session_state["is_logged_in"] = True
+                st.session_state["is_demo"] = False
+                st.success("✅ Login Successful! Redirecting...")
+                st.rerun()
+            else:
+                st.error("❌ Ghalat password! Baraye meharbani sahi Admin password darj karein.")
+
+    with tab2:
+        st.markdown(
+            '<div class="demo-note">🧪 <b>Demo Mode:</b> Explore all system features freely. '
+            'Data changes or saves will <b>not</b> be permanently stored in this mode.</div>',
+            unsafe_allow_html=True
+        )
+        demo_pass = st.text_input(
+            "Enter Demo Password", type="password", key="demo_pass_input",
+            placeholder="Enter the demo password"
+        )
+        if st.button("Start Live Demo", use_container_width=True, key="demo_login_btn"):
+            if demo_pass == "admin123":
+                st.session_state["is_logged_in"] = True
+                st.session_state["is_demo"] = True
+                st.success("✅ Demo Mode Activated!")
+                st.rerun()
+            else:
+                st.error("❌ Ghalat demo password! Baraye meharbani 'admin123' darj karein.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="login-footer">© 2026 ABC School · Powered by Cloud ERP System</p>',
+        unsafe_allow_html=True
+    )
+
+    st.stop()
+# --- LOGIN GATE END ---
+
+# Custom CSS for Professional Dashboard Theme
+st.markdown('''
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+    html, body, [class*="css"] { font-family: 'Poppins', sans-serif; }
+
+    .stApp { background-color: #F4F5F8; }
+    .block-container { padding-top: 1.5rem !important; }
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #2B1A63 0%, #1A103C 100%);
+        color: white;
+    }
+    section[data-testid="stSidebar"] .stButton>button {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        text-align: left;
+        font-weight: 500;
+        margin-bottom: 6px;
+        padding: 10px 14px;
+        transition: all 0.25s ease;
+    }
+    section[data-testid="stSidebar"] .stButton>button:hover {
+        background: #3F2B96;
+        border-color: #ffffff;
+        transform: translateX(3px);
+    }
+    /* Active / selected nav item (rendered as a primary-type button) */
+    section[data-testid="stSidebar"] .stButton>button[kind="primary"] {
+        background: linear-gradient(135deg, #9B4DFF, #3F2B96) !important;
+        border-color: #ffffff !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 14px rgba(123,47,247,0.5);
+        font-weight: 700 !important;
+    }
+
+    /* Top Banner Header */
+    .dashboard-header {
+        background: linear-gradient(135deg, #3F2B96 0%, #1A103C 100%);
+        padding: 24px 30px;
+        border-radius: 14px;
+        color: white;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 24px rgba(63, 43, 150, 0.25);
+        position: relative;
+        overflow: hidden;
+    }
+    .dashboard-header::after {
+        content: "";
+        position: absolute; top: -50px; right: -50px;
+        width: 170px; height: 170px; border-radius: 50%;
+        background: rgba(255,255,255,0.06);
+    }
+    .dashboard-header h1 {
+        margin: 0;
+        font-size: 26px !important;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+    }
+
+    /* Cards & Containers */
+    div[data-testid="stForm"] {
+        border: 1px solid #E5E0F5;
+        border-radius: 14px;
+        padding: 22px;
+        background: white;
+        box-shadow: 0 4px 16px rgba(63,43,150,0.06);
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 12px !important;
+        box-shadow: 0 2px 10px rgba(63,43,150,0.05);
+    }
+
+    .ems-badge {
+        display: inline-block;
+        background: #1A103C;
+        color: #E7D6F7;
+        border-radius: 15px;
+        padding: 3px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+    }
+
+    /* Custom Metric Cards (Dashboard) */
+    .metric-card {
+        background: white;
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: 0 4px 16px rgba(63,43,150,0.08);
+        border-left: 5px solid #7b2ff7;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        margin-bottom: 10px;
+    }
+    .metric-card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(63,43,150,0.14); }
+    .metric-card .m-icon { font-size: 20px; float:right; opacity:0.85; }
+    .metric-card .m-label { font-size: 12px; color:#8B84A8; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+    .metric-card .m-value { font-size: 28px; color:#1A103C; font-weight:800; margin-top:6px; line-height:1; }
+
+    /* Buttons */
+    .stButton>button[kind="primary"] {
+        background: linear-gradient(135deg, #7b2ff7, #3F2B96);
+        border: none;
+    }
+    div[data-testid="stDownloadButton"] button {
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }
+
+    h3 { color: #2B1A63; }
+</style>
+''', unsafe_allow_html=True)
 
 def clean_student_name(name_str):
     if not name_str:
@@ -575,29 +696,47 @@ with st.sidebar:
     logo_path = get_logo_path()
     logo_base64 = get_image_base64(logo_path)
     if logo_base64:
-        st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{logo_base64}" width="85" style="margin: 0 auto; display: block;" /></div>', unsafe_allow_html=True)
+        st.markdown(
+            f'''<div style="text-align:center; margin-top:4px;">
+                <img src="data:image/png;base64,{logo_base64}" width="82"
+                     style="border-radius:50%; border:3px solid rgba(255,255,255,0.35);
+                            box-shadow:0 6px 18px rgba(0,0,0,0.35); margin:0 auto; display:block;" />
+            </div>''',
+            unsafe_allow_html=True
+        )
     else:
         st.markdown("<div style='font-size: 38px; text-align: center;'>🎓</div>", unsafe_allow_html=True)
-    
-    st.markdown("<h3 style='text-align: center; color: white; margin-top: 5px; font-size: 16px;'>ABC SCHOOL</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #D4C5F9; font-size: 11px; margin-bottom: 20px;'>Enterprise Management ERP</p>", unsafe_allow_html=True)
+
+    st.markdown("<h3 style='text-align: center; color: white; margin-top: 10px; margin-bottom:0; font-size: 17px; font-weight:800; letter-spacing:0.5px;'>ABC SCHOOL</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #C9B8F0; font-size: 11px; margin-top:2px;'>Enterprise Management ERP</p>", unsafe_allow_html=True)
+    if st.session_state.get("is_demo", False):
+        st.markdown("<div style='text-align:center; margin-bottom:14px;'><span class='ems-badge' style='background:#F59E0B; color:#1A103C;'>🧪 DEMO MODE</span></div>", unsafe_allow_html=True)
+    else:
+        st.markdown("<div style='text-align:center; margin-bottom:14px;'><span class='ems-badge'>🟢 ADMIN ACCESS</span></div>", unsafe_allow_html=True)
     st.divider()
 
-    st.markdown("<p style='color: #D4C5F9; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Main Navigation</p>", unsafe_allow_html=True)
-    
+    st.markdown("<p style='color: #C9B8F0; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;'>Main Navigation</p>", unsafe_allow_html=True)
+
     if "selected_menu" not in st.session_state:
         st.session_state["selected_menu"] = "📊 Dashboard Overview"
 
-    if st.button("📊 Dashboard Overview", use_container_width=True):
-        st.session_state["selected_menu"] = "📊 Dashboard Overview"
-    if st.button("👥 Staff Management", use_container_width=True):
-        st.session_state["selected_menu"] = "👥 Staff Management"
-    if st.button("🎓 Student Admissions", use_container_width=True):
-        st.session_state["selected_menu"] = "🎓 Student Admissions"
-    if st.button("💳 Fee Management", use_container_width=True):
-        st.session_state["selected_menu"] = "💳 Fee Management"
-    if st.button("📅 Attendance Sheets", use_container_width=True):
-        st.session_state["selected_menu"] = "📅 Attendance Sheets"
+    nav_items = [
+        "📊 Dashboard Overview",
+        "👥 Staff Management",
+        "🎓 Student Admissions",
+        "💳 Fee Management",
+        "📅 Attendance Sheets",
+    ]
+    for item in nav_items:
+        is_active = st.session_state["selected_menu"] == item
+        if st.button(
+            item,
+            use_container_width=True,
+            type="primary" if is_active else "secondary",
+            key=f"nav_{item}"
+        ):
+            st.session_state["selected_menu"] = item
+            st.rerun()
 
     st.divider()
     if st.button("🔄 Refresh Data", use_container_width=True):
@@ -606,16 +745,21 @@ with st.sidebar:
         st.session_state["is_logged_in"] = False
         st.rerun()
 
+    st.markdown(
+        f"<p style='text-align:center; color:#7A6FA0; font-size:10px; margin-top:18px;'>{datetime.now().strftime('%A, %d %B %Y')}</p>",
+        unsafe_allow_html=True
+    )
+
 menu_choice = st.session_state.get("selected_menu", "📊 Dashboard Overview")
 
 # ==================================================================
 # 1. DASHBOARD OVERVIEW
 # ==================================================================
 if menu_choice == "📊 Dashboard Overview":
-    st.markdown('''
+    st.markdown(f'''
     <div class="dashboard-header">
         <h1>Dashboard & Quick Statistics</h1>
-        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Real-time summary of school operations and cloud metrics</p>
+        <p style="margin:4px 0 0 0; color:#D4C5F9; font-size:13px;">Real-time summary of school operations and cloud metrics · {datetime.now().strftime("%d %b %Y, %I:%M %p")}</p>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -623,25 +767,51 @@ if menu_choice == "📊 Dashboard Overview":
     alumni_students = [s for s in students if s.get("status") == "Graduated"]
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Active Students", len(active_students))
-    c2.metric("Graduated / Alumni", len(alumni_students))
-    c3.metric("Total Staff Members", len(staff))
-    c4.metric("System Status", "🟢 Live Sync")
+    with c1:
+        st.markdown(f'''<div class="metric-card" style="border-left-color:#7b2ff7;">
+            <span class="m-icon">🎓</span>
+            <div class="m-label">Active Students</div>
+            <div class="m-value">{len(active_students)}</div>
+        </div>''', unsafe_allow_html=True)
+    with c2:
+        st.markdown(f'''<div class="metric-card" style="border-left-color:#22C55E;">
+            <span class="m-icon">🎉</span>
+            <div class="m-label">Graduated / Alumni</div>
+            <div class="m-value">{len(alumni_students)}</div>
+        </div>''', unsafe_allow_html=True)
+    with c3:
+        st.markdown(f'''<div class="metric-card" style="border-left-color:#F59E0B;">
+            <span class="m-icon">👥</span>
+            <div class="m-label">Total Staff Members</div>
+            <div class="m-value">{len(staff)}</div>
+        </div>''', unsafe_allow_html=True)
+    with c4:
+        st.markdown(f'''<div class="metric-card" style="border-left-color:#22C55E;">
+            <span class="m-icon">🟢</span>
+            <div class="m-label">System Status</div>
+            <div class="m-value" style="font-size:20px;">Live Sync</div>
+        </div>''', unsafe_allow_html=True)
 
     st.write("")
     col_chart1, col_chart2 = st.columns(2)
     with col_chart1:
-        st.subheader("🏫 Staff Members per Campus")
-        if staff:
-            df_staff = pd.DataFrame(staff)
-            if "campus" in df_staff.columns:
-                st.bar_chart(df_staff["campus"].fillna("Unassigned").value_counts())
+        with st.container(border=True):
+            st.markdown("##### 🏫 Staff Members per Campus")
+            if staff:
+                df_staff = pd.DataFrame(staff)
+                if "campus" in df_staff.columns:
+                    st.bar_chart(df_staff["campus"].fillna("Unassigned").value_counts(), color="#7b2ff7")
+            else:
+                st.caption("No staff records yet.")
     with col_chart2:
-        st.subheader("🎓 Active Students per Class Distribution")
-        if active_students:
-            df_std = pd.DataFrame(active_students)
-            if "class_name" in df_std.columns:
-                st.bar_chart(df_std["class_name"].fillna("Unassigned").value_counts())
+        with st.container(border=True):
+            st.markdown("##### 🎓 Active Students per Class Distribution")
+            if active_students:
+                df_std = pd.DataFrame(active_students)
+                if "class_name" in df_std.columns:
+                    st.bar_chart(df_std["class_name"].fillna("Unassigned").value_counts(), color="#3F2B96")
+            else:
+                st.caption("No active students yet.")
 
 # ==================================================================
 # 2. STAFF MANAGEMENT
