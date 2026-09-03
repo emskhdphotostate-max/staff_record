@@ -40,21 +40,27 @@ if not st.session_state["is_logged_in"]:
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
         html, body, [class*="css"] { font-family: 'Poppins', sans-serif; }
-        [data-testid="stSidebar"], [data-testid="stHeader"] { display: none; }
+        [data-testid="stSidebar"], [data-testid="stHeader"], #MainMenu, footer { display: none; }
         .stApp {
             background: radial-gradient(circle at 15% 15%, #5A3FC0 0%, transparent 40%),
                         radial-gradient(circle at 85% 85%, #9B4DFF 0%, transparent 40%),
                         linear-gradient(135deg, #1A103C 0%, #2B1A63 55%, #3F2B96 100%);
             background-attachment: fixed;
+            min-height: 100vh;
         }
-        .block-container { padding-top: 4vh !important; max-width: 460px; }
-        .login-card {
+
+        /* The block-container itself IS the card — everything Streamlit renders
+           lives inside this single real container, so it's guaranteed to nest. */
+        div.block-container {
+            max-width: 440px;
+            margin: 6vh auto 2rem auto;
             background: rgba(255,255,255,0.98);
             border-radius: 22px;
-            padding: 38px 34px 26px 34px;
-            box-shadow: 0 25px 70px rgba(0,0,0,0.40);
-            border: 1px solid rgba(255,255,255,0.25);
+            padding: 40px 34px 30px 34px !important;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.45);
+            border: 1px solid rgba(255,255,255,0.3);
         }
+
         .login-logo-wrap { text-align:center; margin-bottom: 4px; }
         .login-logo-wrap img {
             width: 88px; height: 88px; object-fit: cover; border-radius: 50%;
@@ -63,30 +69,48 @@ if not st.session_state["is_logged_in"]:
         .login-title { text-align:center; color:#1A103C; font-size: 23px; font-weight: 800; margin: 14px 0 2px 0; }
         .login-subtitle {
             text-align:center; color:#8B7FB8; font-size: 11.5px; font-weight: 700;
-            letter-spacing: 1.2px; margin-bottom: 24px; text-transform: uppercase;
+            letter-spacing: 1.2px; margin-bottom: 22px; text-transform: uppercase;
         }
         .demo-note {
             background:#F4F2FB; border-left:4px solid #7b2ff7; padding:10px 14px;
             border-radius:8px; font-size:12.5px; color:#4A3F70; margin-bottom:14px; line-height:1.5;
         }
+
+        /* Tabs */
         .stTabs [data-baseweb="tab-list"] { gap: 4px; background:#F1EEFB; padding:5px; border-radius:10px; }
-        .stTabs [data-baseweb="tab"] { border-radius: 8px; font-weight:600; color:#5B4E8A; }
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg,#7b2ff7,#3F2B96) !important; color:white !important;
+        .stTabs [data-baseweb="tab"] {
+            border-radius: 8px; font-weight:600; color:#5B4E8A; padding:8px 14px;
         }
-        .login-card .stTextInput input { border-radius: 10px; }
-        .login-card .stButton>button {
-            background: linear-gradient(135deg, #7b2ff7, #3F2B96);
-            color: white; border: none; border-radius: 10px; font-weight: 700;
-            padding: 10px 0; box-shadow: 0 6px 18px rgba(123,47,247,0.35);
+        .stTabs [data-baseweb="tab"] p { color: inherit; font-weight: inherit; }
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(135deg,#7b2ff7,#3F2B96) !important;
+        }
+        .stTabs [aria-selected="true"] p { color: white !important; }
+        .stTabs [data-baseweb="tab-highlight"] { background-color: transparent !important; }
+        .stTabs [data-baseweb="tab-border"] { display: none !important; }
+
+        /* Inputs */
+        .stTextInput label p { color:#4A3F70 !important; font-weight:600; font-size:13px; }
+        .stTextInput input {
+            border-radius: 10px !important; border: 1.5px solid #E5E0F5 !important;
+            background: #FAFAFE !important; color: #1A103C !important;
+        }
+        .stTextInput input:focus { border-color: #7b2ff7 !important; }
+
+        /* Buttons */
+        .stButton>button {
+            background: linear-gradient(135deg, #7b2ff7, #3F2B96) !important;
+            color: white !important; border: none !important; border-radius: 10px !important;
+            font-weight: 700 !important; padding: 10px 0 !important;
+            box-shadow: 0 6px 18px rgba(123,47,247,0.35);
             transition: transform 0.15s ease;
         }
-        .login-card .stButton>button:hover { transform: translateY(-2px); }
-        .login-footer { text-align:center; color:#D4C5F9; font-size:11px; margin-top:20px; letter-spacing:0.3px; }
+        .stButton>button:hover { transform: translateY(-2px); }
+        .stButton>button p { color: white !important; }
+
+        .login-footer { text-align:center; color:#B7A9DB; font-size:11px; margin-top:20px; letter-spacing:0.3px; }
     </style>
     ''', unsafe_allow_html=True)
-
-    st.markdown('<div class="login-card">', unsafe_allow_html=True)
 
     logo_b64 = get_image_base64(get_logo_path())
     if logo_b64:
@@ -132,7 +156,6 @@ if not st.session_state["is_logged_in"]:
             else:
                 st.error("❌ Ghalat demo password! Baraye meharbani 'admin123' darj karein.")
 
-    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown(
         '<p class="login-footer">© 2026 ABC School · Powered by Cloud ERP System</p>',
         unsafe_allow_html=True
