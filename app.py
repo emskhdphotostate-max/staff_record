@@ -47,6 +47,31 @@ if not st.session_state["is_logged_in"]:
                         linear-gradient(135deg, #1A103C 0%, #2B1A63 55%, #3F2B96 100%);
             background-attachment: fixed;
             min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        /* Subtle dot-grid texture so the sides don't look flat/empty */
+        .stApp::before {
+            content: "";
+            position: fixed; inset: 0;
+            background-image: radial-gradient(rgba(255,255,255,0.14) 1.4px, transparent 1.4px);
+            background-size: 26px 26px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        /* Floating decorative school-themed icons */
+        .float-icon {
+            position: fixed;
+            font-size: 46px;
+            opacity: 0.16;
+            filter: blur(0.3px);
+            pointer-events: none;
+            z-index: 0;
+            animation: floatY 6s ease-in-out infinite;
+        }
+        @keyframes floatY {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-18px) rotate(6deg); }
         }
 
         /* The block-container itself IS the card — everything Streamlit renders
@@ -59,6 +84,8 @@ if not st.session_state["is_logged_in"]:
             padding: 40px 34px 30px 34px !important;
             box-shadow: 0 25px 70px rgba(0,0,0,0.45);
             border: 1px solid rgba(255,255,255,0.3);
+            position: relative;
+            z-index: 1;
         }
 
         .login-logo-wrap { text-align:center; margin-bottom: 4px; }
@@ -77,15 +104,21 @@ if not st.session_state["is_logged_in"]:
         }
 
         /* Tabs */
-        .stTabs [data-baseweb="tab-list"] { gap: 4px; background:#F1EEFB; padding:5px; border-radius:10px; }
+        .stTabs [data-baseweb="tab-list"] { gap: 4px; background:transparent; padding:0; border-bottom: 1px solid #EEE9F9; }
         .stTabs [data-baseweb="tab"] {
-            border-radius: 8px; font-weight:600; color:#5B4E8A; padding:8px 14px;
+            border-radius: 8px 8px 0 0; font-weight:600; color:#5B4E8A; padding:8px 14px;
+            background: transparent; border-bottom: 3px solid transparent; transition: background 0.2s ease;
         }
         .stTabs [data-baseweb="tab"] p { color: inherit; font-weight: inherit; }
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg,#7b2ff7,#3F2B96) !important;
+        .stTabs [data-baseweb="tab"]:hover {
+            background: #F1EEFB;
         }
-        .stTabs [aria-selected="true"] p { color: white !important; }
+        .stTabs [aria-selected="true"] {
+            background: transparent !important;
+            border-bottom: 3px solid #7b2ff7 !important;
+        }
+        .stTabs [aria-selected="true"] p { color: #3F2B96 !important; font-weight: 700 !important; }
+        .stTabs [aria-selected="true"]:hover { background: #F8F6FE !important; }
         .stTabs [data-baseweb="tab-highlight"] { background-color: transparent !important; }
         .stTabs [data-baseweb="tab-border"] { display: none !important; }
 
@@ -110,6 +143,17 @@ if not st.session_state["is_logged_in"]:
 
         .login-footer { text-align:center; color:#B7A9DB; font-size:11px; margin-top:20px; letter-spacing:0.3px; }
     </style>
+    ''', unsafe_allow_html=True)
+
+    st.markdown('''
+    <span class="float-icon" style="top:8%; left:8%; animation-delay:0s;">🎓</span>
+    <span class="float-icon" style="top:18%; left:80%; font-size:38px; animation-delay:1s;">📚</span>
+    <span class="float-icon" style="top:70%; left:10%; font-size:40px; animation-delay:2s;">✏️</span>
+    <span class="float-icon" style="top:78%; left:85%; animation-delay:0.5s;">🏫</span>
+    <span class="float-icon" style="top:45%; left:4%; font-size:34px; animation-delay:1.5s;">📐</span>
+    <span class="float-icon" style="top:38%; left:90%; font-size:34px; animation-delay:2.5s;">📝</span>
+    <span class="float-icon" style="top:90%; left:45%; font-size:32px; animation-delay:1.8s;">🖍️</span>
+    <span class="float-icon" style="top:4%; left:45%; font-size:30px; animation-delay:0.8s;">⭐</span>
     ''', unsafe_allow_html=True)
 
     logo_b64 = get_image_base64(get_logo_path())
