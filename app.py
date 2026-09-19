@@ -1,3 +1,4 @@
+name=app.py
 import streamlit as st
 from supabase import create_client, Client
 import re
@@ -11,7 +12,7 @@ from datetime import datetime
 # Page setup
 # ------------------------------------------------------------------
 st.set_page_config(
-    page_title="ABC School — Management System",
+    page_title="Excellence Model School — Management System",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -29,7 +30,7 @@ def get_image_base64(path):
             return base64.b64encode(f.read()).decode()
     return None
 
-# --- ABC School LOGIN & DEMO GATE ---
+# --- EMS LOGIN & DEMO GATE ---
 if "is_logged_in" not in st.session_state:
   st.session_state["is_logged_in"] = False
 if "is_demo" not in st.session_state:
@@ -50,7 +51,6 @@ if not st.session_state["is_logged_in"]:
             position: relative;
             overflow-x: hidden;
         }
-        /* Subtle dot-grid texture so the sides don't look flat/empty */
         .stApp::before {
             content: "";
             position: fixed; inset: 0;
@@ -59,7 +59,6 @@ if not st.session_state["is_logged_in"]:
             pointer-events: none;
             z-index: 0;
         }
-        /* Floating decorative school-themed icons */
         .float-icon {
             position: fixed;
             font-size: 46px;
@@ -73,9 +72,6 @@ if not st.session_state["is_logged_in"]:
             0%, 100% { transform: translateY(0px) rotate(0deg); }
             50% { transform: translateY(-18px) rotate(6deg); }
         }
-
-        /* The block-container itself IS the card — everything Streamlit renders
-           lives inside this single real container, so it's guaranteed to nest. */
         div.block-container {
             max-width: 440px;
             margin: 6vh auto 2rem auto;
@@ -87,50 +83,38 @@ if not st.session_state["is_logged_in"]:
             position: relative;
             z-index: 1;
         }
-
         .login-logo-wrap { text-align:center; margin-bottom: 4px; }
         .login-logo-wrap img {
             width: 88px; height: 88px; object-fit: cover; border-radius: 50%;
             box-shadow: 0 8px 22px rgba(63,43,150,0.4); border: 3px solid #fff;
         }
-        .login-title { text-align:center; color:#1A103C; font-size: 23px; font-weight: 800; margin: 14px 0 2px 0; }
+        .login-title { text-align:center; color:#1A103C; font-size: 21px; font-weight: 800; margin: 14px 0 2px 0; }
         .login-subtitle {
-            text-align:center; color:#8B7FB8; font-size: 11.5px; font-weight: 700;
+            text-align:center; color:#8B7FB8; font-size: 11px; font-weight: 700;
             letter-spacing: 1.2px; margin-bottom: 22px; text-transform: uppercase;
         }
         .demo-note {
             background:#F4F2FB; border-left:4px solid #7b2ff7; padding:10px 14px;
             border-radius:8px; font-size:12.5px; color:#4A3F70; margin-bottom:14px; line-height:1.5;
         }
-
-        /* Tabs */
         .stTabs [data-baseweb="tab-list"] { gap: 4px; background:transparent; padding:0; border-bottom: 1px solid #EEE9F9; }
         .stTabs [data-baseweb="tab"] {
             border-radius: 8px 8px 0 0; font-weight:600; color:#5B4E8A; padding:8px 14px;
             background: transparent; border-bottom: 3px solid transparent; transition: background 0.2s ease;
         }
         .stTabs [data-baseweb="tab"] p { color: inherit; font-weight: inherit; }
-        .stTabs [data-baseweb="tab"]:hover {
-            background: #F1EEFB;
-        }
+        .stTabs [data-baseweb="tab"]:hover { background: #F1EEFB; }
         .stTabs [aria-selected="true"] {
             background: transparent !important;
             border-bottom: 3px solid #7b2ff7 !important;
         }
         .stTabs [aria-selected="true"] p { color: #3F2B96 !important; font-weight: 700 !important; }
-        .stTabs [aria-selected="true"]:hover { background: #F8F6FE !important; }
-        .stTabs [data-baseweb="tab-highlight"] { background-color: transparent !important; }
-        .stTabs [data-baseweb="tab-border"] { display: none !important; }
-
-        /* Inputs */
         .stTextInput label p { color:#4A3F70 !important; font-weight:600; font-size:13px; }
         .stTextInput input {
             border-radius: 10px !important; border: 1.5px solid #E5E0F5 !important;
             background: #FAFAFE !important; color: #1A103C !important;
         }
         .stTextInput input:focus { border-color: #7b2ff7 !important; }
-
-        /* Buttons */
         .stButton>button {
             background: linear-gradient(135deg, #7b2ff7, #3F2B96) !important;
             color: white !important; border: none !important; border-radius: 10px !important;
@@ -140,7 +124,6 @@ if not st.session_state["is_logged_in"]:
         }
         .stButton>button:hover { transform: translateY(-2px); }
         .stButton>button p { color: white !important; }
-
         .login-footer { text-align:center; color:#B7A9DB; font-size:11px; margin-top:20px; letter-spacing:0.3px; }
     </style>
     ''', unsafe_allow_html=True)
@@ -162,8 +145,8 @@ if not st.session_state["is_logged_in"]:
     else:
         st.markdown("<div style='text-align:center; font-size:52px;'>🎓</div>", unsafe_allow_html=True)
 
-    st.markdown('<div class="login-title">ABC School — System Access</div>', unsafe_allow_html=True)
-    st.markdown('<div class="login-subtitle">Enterprise Management ERP &nbsp;·&nbsp; Secure Portal</div>', unsafe_allow_html=True)
+    st.markdown('<div class="login-title">Excellence Model School</div>', unsafe_allow_html=True)
+    st.markdown('<div class="login-subtitle">Multi-Campus ERP System &nbsp;·&nbsp; Secure Portal</div>', unsafe_allow_html=True)
 
     tab1, tab2 = st.tabs(["🔐  Admin Login", "🧪  Live Demo Mode"])
 
@@ -201,14 +184,13 @@ if not st.session_state["is_logged_in"]:
                 st.error("❌ Ghalat demo password! Baraye meharbani 'admin123' darj karein.")
 
     st.markdown(
-        '<p class="login-footer">© 2026 ABC School · Powered by Cloud ERP System</p>',
+        '<p class="login-footer">© 2026 Excellence Model School · Cloud ERP System</p>',
         unsafe_allow_html=True
     )
 
     st.stop()
 # --- LOGIN GATE END ---
 
-# Custom CSS for Professional Dashboard Theme
 st.markdown('''
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
@@ -217,7 +199,6 @@ st.markdown('''
     .stApp { background-color: #F4F5F8; }
     .block-container { padding-top: 1.5rem !important; }
 
-    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #2B1A63 0%, #1A103C 100%);
         color: white;
@@ -239,7 +220,6 @@ st.markdown('''
         border-color: #ffffff;
         transform: translateX(3px);
     }
-    /* Active / selected nav item (rendered as a primary-type button) */
     section[data-testid="stSidebar"] .stButton>button[kind="primary"] {
         background: linear-gradient(135deg, #9B4DFF, #3F2B96) !important;
         border-color: #ffffff !important;
@@ -248,7 +228,6 @@ st.markdown('''
         font-weight: 700 !important;
     }
 
-    /* Top Banner Header */
     .dashboard-header {
         background: linear-gradient(135deg, #3F2B96 0%, #1A103C 100%);
         padding: 24px 30px;
@@ -267,12 +246,11 @@ st.markdown('''
     }
     .dashboard-header h1 {
         margin: 0;
-        font-size: 26px !important;
+        font-size: 24px !important;
         font-weight: 800;
         letter-spacing: 0.3px;
     }
 
-    /* Cards & Containers */
     div[data-testid="stForm"] {
         border: 1px solid #E5E0F5;
         border-radius: 14px;
@@ -296,7 +274,6 @@ st.markdown('''
         letter-spacing: 0.3px;
     }
 
-    /* Custom Metric Cards (Dashboard) */
     .metric-card {
         background: white;
         border-radius: 14px;
@@ -311,7 +288,6 @@ st.markdown('''
     .metric-card .m-label { font-size: 12px; color:#8B84A8; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
     .metric-card .m-value { font-size: 28px; color:#1A103C; font-weight:800; margin-top:6px; line-height:1; }
 
-    /* Buttons */
     .stButton>button[kind="primary"] {
         background: linear-gradient(135deg, #7b2ff7, #3F2B96);
         border: none;
@@ -351,8 +327,7 @@ DEFAULT_DESIGNATIONS = [
     'Admin Staff', 'Librarian', 'Lab Assistant', 'Gate Keeper', 'Security Guard', 'Maid', 'Peon',
 ]
 DEFAULT_CAMPUSES = [
-    'Kharadar Campus', 'Tower Campus', 'Sonia Arcade Campus', 'Moosa Lane Campus',
-    'Pakistan Chowk Campus', 'Park View Campus', 'Federal B Area Campus',
+    'Kharadar Campus', 'Park View Campus', 'Sony Campus', 'Tower Campus', 'Taj Campus', 'Kharadar Extension Campus'
 ]
 
 DEFAULT_CLASSES = [
@@ -494,7 +469,7 @@ def generate_staff_pdf(data_rows, custom_fields_list):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, safe_text("ABC School - Staff Report"), 0, 1, "C")
+    pdf.cell(0, 10, safe_text("Excellence Model School - Staff Report"), 0, 1, "C")
     pdf.set_font("Arial", "", 10)
     pdf.cell(0, 8, safe_text(f"Total Records: {len(data_rows)}"), 0, 1, "C")
     pdf.ln(5)
@@ -513,7 +488,7 @@ def generate_monthly_attendance_pdf(class_name, month_year_str, students_list):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 8, safe_text("ABC School - Monthly Attendance Sheet"), 0, 1, "C")
+    pdf.cell(0, 8, safe_text("Excellence Model School - Monthly Attendance Sheet"), 0, 1, "C")
     pdf.set_font("Arial", "B", 11)
     pdf.cell(0, 6, safe_text(f"Class: {class_name}    |    Month: {month_year_str}"), 0, 1, "C")
     pdf.ln(4)
@@ -546,7 +521,7 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     
     pdf.set_font("Arial", "B", 13)
     pdf.set_xy(10, 10)
-    pdf.cell(128, 6, safe_text("ABC SCHOOL"), 0, 1, "C")
+    pdf.cell(128, 6, safe_text("EXCELLENCE MODEL SCHOOL"), 0, 1, "C")
     pdf.set_font("Arial", "", 9)
     pdf.cell(128, 5, safe_text("Fee Payment Challan / Voucher"), 0, 1, "C")
     
@@ -654,7 +629,7 @@ def generate_id_cards_pdf(students_list):
         pdf.set_xy(x_start, y_start + 3)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(150, 6, safe_text("ABC SCHOOL"), 0, 1, "C")
+        pdf.cell(150, 6, safe_text("EXCELLENCE MODEL SCHOOL"), 0, 1, "C")
         pdf.set_font("Arial", "", 8)
         pdf.set_xy(x_start, y_start + 10)
         pdf.cell(150, 4, safe_text("STUDENT IDENTITY CARD"), 0, 1, "C")
@@ -774,8 +749,8 @@ with st.sidebar:
     else:
         st.markdown("<div style='font-size: 38px; text-align: center;'>🎓</div>", unsafe_allow_html=True)
 
-    st.markdown("<h3 style='text-align: center; color: white; margin-top: 10px; margin-bottom:0; font-size: 17px; font-weight:800; letter-spacing:0.5px;'>ABC SCHOOL</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #C9B8F0; font-size: 11px; margin-top:2px;'>Enterprise Management ERP</p>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: white; margin-top: 10px; margin-bottom:0; font-size: 15px; font-weight:800; letter-spacing:0.3px;'>EXCELLENCE MODEL SCHOOL</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #C9B8F0; font-size: 11px; margin-top:2px;'>Multi-Campus ERP System</p>", unsafe_allow_html=True)
     if st.session_state.get("is_demo", False):
         st.markdown("<div style='text-align:center; margin-bottom:14px;'><span class='ems-badge' style='background:#F59E0B; color:#1A103C;'>🧪 DEMO MODE</span></div>", unsafe_allow_html=True)
     else:
@@ -1411,7 +1386,7 @@ elif menu_choice == "💳 Fee Management":
         report_month = rep_col1.text_input("Report Month & Year", value=datetime.now().strftime("%B %Y"), key="rep_month")
         report_class = rep_col2.selectbox("Select Class / All Classes", ["All Active Classes"] + class_sequence, key="rep_class")
         
-        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name") == report_class and s.get("status", "Active") == "Active"]
+        target_students = students if report_class == "All Active Classes" else [s for s in students if s.get("class_name"] == report_class and s.get("status", "Active") == "Active"]
         if target_students:
             ledger_data = []
             total_collected, total_remaining = 0, 0
