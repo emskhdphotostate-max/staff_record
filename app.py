@@ -11,7 +11,7 @@ from datetime import datetime
 # Page setup
 # ------------------------------------------------------------------
 st.set_page_config(
-    page_title="Excellence Model School — Management System",
+    page_title="ABC School — Management System",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -144,7 +144,7 @@ if not st.session_state["is_logged_in"]:
     else:
         st.markdown("<div style='text-align:center; font-size:52px;'>🎓</div>", unsafe_allow_html=True)
 
-    st.markdown('<div class="login-title">Excellence Model School</div>', unsafe_allow_html=True)
+    st.markdown('<div class="login-title">ABC School</div>', unsafe_allow_html=True)
     st.markdown('<div class="login-subtitle">Multi-Campus ERP System &nbsp;·&nbsp; Secure Portal</div>', unsafe_allow_html=True)
 
     tab1, tab2 = st.tabs(["🔐  Admin Login", "🧪  Live Demo Mode"])
@@ -183,7 +183,7 @@ if not st.session_state["is_logged_in"]:
                 st.error("❌ Ghalat demo password! Baraye meharbani 'admin123' darj karein.")
 
     st.markdown(
-        '<p class="login-footer">© 2026 Excellence Model School · Cloud ERP System</p>',
+        '<p class="login-footer">© 2026 ABC School · Cloud ERP System</p>',
         unsafe_allow_html=True
     )
 
@@ -468,7 +468,7 @@ def generate_staff_pdf(data_rows, custom_fields_list):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, safe_text("Excellence Model School - Staff Report"), 0, 1, "C")
+    pdf.cell(0, 10, safe_text("ABC School - Staff Report"), 0, 1, "C")
     pdf.set_font("Arial", "", 10)
     pdf.cell(0, 8, safe_text(f"Total Records: {len(data_rows)}"), 0, 1, "C")
     pdf.ln(5)
@@ -487,7 +487,7 @@ def generate_monthly_attendance_pdf(class_name, month_year_str, students_list):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 8, safe_text("Excellence Model School - Monthly Attendance Sheet"), 0, 1, "C")
+    pdf.cell(0, 8, safe_text("ABC School - Monthly Attendance Sheet"), 0, 1, "C")
     pdf.set_font("Arial", "B", 11)
     pdf.cell(0, 6, safe_text(f"Class: {class_name}    |    Month: {month_year_str}"), 0, 1, "C")
     pdf.ln(4)
@@ -520,7 +520,7 @@ def generate_fee_challan_pdf(student, month_year, include_yearly=False):
     
     pdf.set_font("Arial", "B", 13)
     pdf.set_xy(10, 10)
-    pdf.cell(128, 6, safe_text("EXCELLENCE MODEL SCHOOL"), 0, 1, "C")
+    pdf.cell(128, 6, safe_text("ABC School"), 0, 1, "C")
     pdf.set_font("Arial", "", 9)
     pdf.cell(128, 5, safe_text("Fee Payment Challan / Voucher"), 0, 1, "C")
     
@@ -628,7 +628,7 @@ def generate_id_cards_pdf(students_list):
         pdf.set_xy(x_start, y_start + 3)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(150, 6, safe_text("EXCELLENCE MODEL SCHOOL"), 0, 1, "C")
+        pdf.cell(150, 6, safe_text("ABC School"), 0, 1, "C")
         pdf.set_font("Arial", "", 8)
         pdf.set_xy(x_start, y_start + 10)
         pdf.cell(150, 4, safe_text("STUDENT IDENTITY CARD"), 0, 1, "C")
@@ -748,7 +748,7 @@ with st.sidebar:
     else:
         st.markdown("<div style='font-size: 38px; text-align: center;'>🎓</div>", unsafe_allow_html=True)
 
-    st.markdown("<h3 style='text-align: center; color: white; margin-top: 10px; margin-bottom:0; font-size: 15px; font-weight:800; letter-spacing:0.3px;'>EXCELLENCE MODEL SCHOOL</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: white; margin-top: 10px; margin-bottom:0; font-size: 15px; font-weight:800; letter-spacing:0.3px;'>ABC School</h3>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #C9B8F0; font-size: 11px; margin-top:2px;'>Multi-Campus ERP System</p>", unsafe_allow_html=True)
     if st.session_state.get("is_demo", False):
         st.markdown("<div style='text-align:center; margin-bottom:14px;'><span class='ems-badge' style='background:#F59E0B; color:#1A103C;'>🧪 DEMO MODE</span></div>", unsafe_allow_html=True)
